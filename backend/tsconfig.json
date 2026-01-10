@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+
+    "target": "ES2023",
+    "outDir": "./dist",
+    "sourceMap": true,
+
+    "skipLibCheck": true,
+    "types": ["node","jest"],
+
+    "baseUrl": "./",
+    "incremental": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.ts", "**/*.spec.ts", "**/*.test.ts"],
+  "exclude": ["node_modules", "dist"]
+}
