@@ -21,8 +21,10 @@ model User {
   phone      String?
   approvedAt DateTime? //for resident approval
 
+  refreshToken String?
+
   role       UserRole @default(RESIDENT_PENDING)
-  unitNumber String? // For residents only
+  unitNumber String   @unique
 
   imageUrl String?
   imageKey String? // R2 storage key
