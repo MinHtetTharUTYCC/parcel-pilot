@@ -13,7 +13,7 @@ export interface RequestUser {
 }
 
 export interface RequestWithRefreshToken extends Request {
-    user: RequestUser & { refreshToken: string };
+    user: RequestUser & { refresh_token: string };
     cookies: {
         refresh_token?: string;
     };

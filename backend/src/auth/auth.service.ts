@@ -1,6 +1,6 @@
-import { ConflictException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { SignupDto } from './dto/signup.dto';
-import { JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
 import { ConfigService } from "@nestjs/config"
 import * as bcrypt from "bcrypt";
 import { LoginDto } from './dto/login.dto';
@@ -80,44 +80,62 @@ export class AuthService {
         const hashedPwd = await bcrypt.hash(dto.password, 10);
 
         //create user
-        const newUser = await this.usersService.createNewUser({
+        await this.usersService.createNewUser({
             ...dto,
             password: hashedPwd,
         });
 
-        //generate tokens
-        const tokens = await this.getTokens(newUser.id, dto.name, newUser.email, newUser.role);
-
-        // save/update refreshToken to DB
-        const hashedRT = await bcrypt.hash(tokens.refreshToken, 10);
-        await this.usersService.updateRefreshToken(newUser.id, hashedRT);
-
-        return {
-            ...tokens,
-            user: newUser,
-        };
+        return "Created account successfully. Wait for approval."
     }
 
-    async refreshTokens(userId: string, oldRefreshToken: string) {
-        this.logger.log(`User Refreshed tokens: ${userId}`);
+    async refreshTokens(oldRefreshToken: string) {
+        try {
+            const payload = await this.jwtService.verifyAsync(
+                oldRefreshToken,
+                { secret: this.configService.get<string>('JWT_REFRESH_SECRET') }
+            );
 
-        const user = await this.usersService.getUserWithRefreshToken(userId);
-        if (!user || !user.refreshToken) {
-            throw new ForbiddenException('Access Denied');
+            const userId = payload.sub;
+
+            const user = await this.usersService.getUserWithRefreshToken(userId);
+            if (!user || !user.refreshToken) {
+                throw new ForbiddenException('Access Denied');
+            }
+
+            const rtMatches = await bcrypt.compare(
+                oldRefreshToken,
+                user.refreshToken,
+            );
+            if (!rtMatches) throw new ForbiddenException('Invalid refresh token');
+
+            const newTokens = await this.getTokens(userId, user.name, user.email, user.role);
+
+            const hashed = await bcrypt.hash(newTokens.refreshToken, 10);
+            await this.usersService.updateRefreshToken(userId, hashed);
+
+            return {
+                ...newTokens,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.email,
+                    role: user.role,
+                }
+            };
+        } catch (error: unknown) {
+            if (error instanceof JsonWebTokenError) {
+                if (error.name === 'TokenExpiredError') {
+                    throw new UnauthorizedException('Refresh token expired');
+                }
+                if (error.name === 'JsonWebTokenError') {
+                    throw new UnauthorizedException('Invalid refresh token');
+                }
+            }
+            throw error;
+
         }
 
-        const rtMatches = await bcrypt.compare(
-            oldRefreshToken,
-            user.refreshToken,
-        );
-        if (!rtMatches) throw new ForbiddenException('Invalid refresh token');
 
-        const newTokens = await this.getTokens(userId, user.name, user.email, user.role);
-
-        const hashed = await bcrypt.hash(newTokens.refreshToken, 10);
-        await this.usersService.updateRefreshToken(userId, hashed);
-
-        return newTokens;
     }
 
     async logout(userId: string) {

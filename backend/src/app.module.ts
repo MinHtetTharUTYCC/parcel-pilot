@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
 	imports: [
@@ -16,7 +17,8 @@ import { ConfigModule } from '@nestjs/config';
 		JwtModule.register({ global: true, secret: process.env.JWT_ACCESS_SECRET, signOptions: { expiresIn: '1h' } }),
 		ParcelsModule,
 		DatabaseModule, AuthModule,
-		UsersModule],
+		UsersModule,
+		NotificationsModule],
 	controllers: [AppController],
 	providers: [AppService, {
 		provide: APP_FILTER,

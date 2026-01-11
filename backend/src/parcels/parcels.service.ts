@@ -5,18 +5,45 @@ import { generatePickupCode } from 'src/common/utils';
 import { ParcelStatus, Prisma } from '@prisma/client';
 import { RequestUser } from 'src/auth/interfaces/auth.interface';
 import { UpdateParcelDto } from './dto/update-parcel.dto';
-import { UpdateParcelStatusDto } from './dto/update-parcel-status.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { GetParcelsFilterDto } from './dto/get-parcels.filter.dto';
 
 @Injectable()
 export class ParcelsService {
 	constructor(private readonly databaseService: DatabaseService) { }
 
-	async getParcels(cursor?: string, limit = 10) {
-		const cursorCondition: Prisma.ParcelWhereInput = cursor ? { registeredAt: { lt: new Date(cursor) } } : {};
+	async getParcels(dto: GetParcelsFilterDto) {
+		const { cursor, limit, q } = dto;
+		const whereCondition: Prisma.ParcelWhereInput = {};
+
+		// registered date cursor
+		if (cursor) {
+			whereCondition.registeredAt = { lt: new Date(cursor) }
+		};
+
+		// search
+		if (q) {
+			whereCondition.OR = [
+				{ pickupCode: { contains: q, mode: 'insensitive' } },
+				{ orderId: { contains: q, mode: 'insensitive' } },
+				{ courier: { contains: q, mode: 'insensitive' } },
+				{ description: { contains: q, mode: 'insensitive' } },
+
+				{
+					recipient: {
+						OR: [
+							{ unitNumber: { contains: q, mode: 'insensitive' } },
+							{ name: { contains: q, mode: 'insensitive' } },
+							{ email: { contains: q, mode: 'insensitive' } },
+							{ phone: { contains: q, mode: 'insensitive' } },
+						]
+					}
+				}
+			]
+		}
 
 		const parcels = await this.databaseService.parcel.findMany({
-			where: cursorCondition,
+			where: whereCondition,
 			take: limit + 1,
 			orderBy: { registeredAt: 'desc' },
 			include: {
@@ -39,16 +66,31 @@ export class ParcelsService {
 		};
 	}
 
-	async getMyParcels(userId: string, cursor?: string, limit = 10) {
-		const cursorCondition: Prisma.ParcelWhereInput = cursor ? {
-			AND: [
-				{ recipientId: userId },
-				{ registeredAt: { lt: new Date(cursor) } }
-			]
-		} : { recipientId: userId }
+	async getMyParcels(userId: string, dto: GetParcelsFilterDto) {
+		const { cursor, limit, q } = dto;
+
+		// ownership
+		const whereCondition: Prisma.ParcelWhereInput = {
+			recipientId: userId
+		};
+
+		// registered date cursor
+		if (cursor) {
+			whereCondition.registeredAt = { lt: new Date(cursor) };
+		}
+
+		// search
+		if (q) {
+			whereCondition.OR = [
+				{ pickupCode: { contains: q, mode: 'insensitive' } },
+				{ orderId: { contains: q, mode: 'insensitive' } },
+				{ courier: { contains: q, mode: 'insensitive' } },
+				{ description: { contains: q, mode: 'insensitive' } },
+			];
+		}
 
 		const parcels = await this.databaseService.parcel.findMany({
-			where: cursorCondition,
+			where: whereCondition,
 			take: limit + 1,
 			orderBy: {
 				registeredAt: 'desc',
@@ -112,24 +154,26 @@ export class ParcelsService {
 
 	async createParcel(dto: CreateParcelDTo, userId: string) {
 		const pickupCode = generatePickupCode();
-		const { recipientId, ...createDto } = dto;
+		const { recipientId, ...restOfDto } = dto;
 		try {
 			const parcel = await this.databaseService.parcel.create({
 				data: {
-					...createDto,
-					receivedById: userId,
-					pickupCode,
+					...restOfDto,
 					recipient: {
-						connect: { id: recipientId },
+						connect: { id: recipientId }
 					},
+					receivedBy: {
+						connect: { id: userId }
+					},
+					pickupCode,
 				}
 			});
 
 			return parcel;
 		} catch (error) {
 			if (error instanceof PrismaClientKnownRequestError) {
-				if (error.code === "P2003") {
-					throw new NotFoundException("Resident Not Found")
+				if (error.code === "P2025") {
+					throw new NotFoundException("User Not Found")
 				}
 			}
 
@@ -138,21 +182,46 @@ export class ParcelsService {
 	}
 
 	async updateParcel(dto: UpdateParcelDto, parcelId: string) {
-		await this.databaseService.parcel.update({
-			where: { id: parcelId },
-			data: { ...dto }
-		});
+		try {
+			await this.databaseService.parcel.update({
+				where: { id: parcelId },
+				data: { ...dto }
+			});
 
-		return "Updated parcel successfully"
+			return { parcelId }
+		} catch (error: unknown) {
+			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
+				throw new NotFoundException("Parcel not found")
+			}
+			throw error;
+		}
 	}
 
 	async updateParcelStatus(parcelId: string, status: ParcelStatus) {
-		await this.databaseService.parcel.update({
-			where: { id: parcelId },
-			data: { status: status }
-		});
+		try {
+			await this.databaseService.parcel.update({
+				where: { id: parcelId },
+				data: { status: status }
+			});
 
-		return "Updated parcel status successfully"
+			return { parcelId, status }
+		} catch (error: unknown) {
+			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
+				throw new NotFoundException("Parcel not found")
+			}
+			throw error;
+		}
+	}
+
+	async deleteParcel(parcelId: string) {
+		try {
+			await this.databaseService.parcel.delete({ where: { id: parcelId } })
+			return { parcelId };
+		} catch (error) {
+			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
+				throw new NotFoundException("Parcel not found")
+			}
+		}
 	}
 
 }

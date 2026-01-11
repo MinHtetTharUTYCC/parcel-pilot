@@ -11,6 +11,7 @@ enum UserRole {
   STAFF
   RESIDENT
   RESIDENT_PENDING
+  RESIDENT_REJECTED
 }
 
 model User {
@@ -85,12 +86,6 @@ model Parcel {
   @@index([orderId])
 }
 
-enum PickupMethod {
-  QR_SCAN
-  MANUAL_CODE // Resident entered code
-  STAFF_VERIFIED // staff verified manually
-}
-
 model PickupLog {
   id String @id @default(cuid())
 
@@ -100,9 +95,6 @@ model PickupLog {
   // Who picked up
   pickedById String // Resident who picked up
   pickedBy   User   @relation(fields: [pickedById], references: [id])
-
-  // Pickup details
-  method PickupMethod
 
   createdAt DateTime @default(now())
 

@@ -4,6 +4,8 @@ import { LoginDto } from 'src/auth/dto/login.dto';
 import { SignupDto } from 'src/auth/dto/signup.dto';
 import { DatabaseService } from 'src/database/database.service';
 import * as bcrypt from "bcrypt"
+import { ResidentFilterDto } from './dto/resident-filter.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
@@ -129,5 +131,94 @@ export class UsersService {
         }
 
         // TODO: Ban or reject
+    }
+
+    async approveResident(residentId: string) {
+        try {
+            await this.databaseService.user.update({
+                where: { id: residentId },
+                data: {
+                    role: "RESIDENT",
+                    approvedAt: new Date(),
+                }
+            });
+
+            // TODO: mailing
+
+            return { residentId }
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+                throw new NotFoundException("User record not found")
+            }
+            throw error;
+        }
+    }
+
+    async getResidents(dto: ResidentFilterDto) {
+        const { cursor, limit, pending } = dto;
+
+        const residents = await this.databaseService.user.findMany({
+            where: {
+                role: pending ? "RESIDENT_PENDING" : "RESIDENT",
+            },
+            take: limit + 1,
+            skip: cursor ? 1 : 0,
+            cursor: cursor ? { id: cursor } : undefined,
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                phone: true,
+                imageUrl: true,
+                unitNumber: true,
+                _count: {
+                    select: {
+                        receivedParcels: true,
+                    }
+                }
+            }
+        });
+
+        const hasNext = residents.length > 10;
+        const items = hasNext ? residents.slice(0, -1) : residents;
+        const nextCursor = hasNext ? items[items.length - 1].id : null
+
+        return {
+            data: items,
+            meta: { limit, hasNext, nextCursor },
+        }
+    }
+
+    async getStaffs(dto: PaginationDto) {
+        const { cursor, limit } = dto;
+
+        const staffs = await this.databaseService.user.findMany({
+            where: { role: "STAFF" },
+            take: limit + 1,
+            skip: cursor ? 1 : 0,
+            cursor: cursor ? { id: cursor } : undefined,
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                phone: true,
+                imageUrl: true,
+                unitNumber: true,
+                _count: {
+                    select: {
+                        managedParcels: true,
+                    }
+                }
+            }
+        });
+
+        const hasNext = staffs.length > 10;
+        const items = hasNext ? staffs.slice(0, -1) : staffs;
+        const nextCursor = hasNext ? items[items.length - 1].id : null
+
+        return {
+            data: items,
+            meta: { limit, hasNext, nextCursor }
+        }
     }
 }

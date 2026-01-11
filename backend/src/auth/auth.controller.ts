@@ -1,10 +1,11 @@
-import { Body, Controller, ForbiddenException, Post, Req, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { Body, Controller, ForbiddenException, Post, Req, Res, UnauthorizedException, UseInterceptors } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { ReqUser } from './decorators/req-user.decorator';
 import * as authInterfaces from "../auth/interfaces/auth.interface"
+import { SuccessResponseInterceptor } from 'src/common/interceptors/success-response.interceptor';
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -26,6 +27,7 @@ export class AuthController {
             secure: isProd,
             sameSite: 'lax',
             path: '/',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         return {
@@ -36,52 +38,42 @@ export class AuthController {
     }
 
     @Post('signup')
+    @UseInterceptors(SuccessResponseInterceptor)
     async signup(
         @Body() dto: SignupDto,
+    ) {
+        return this.authService.signup(dto);
+    }
+
+    @Post('refresh')
+    async refresh(
+        @Req() req: Request,
         @Res({ passthrough: true }) res: Response,
     ) {
-        const { accessToken, refreshToken, user } =
-            await this.authService.signup(dto);
 
-        // set refresh tokens only in HttpOnly cookie
+        const oldRefreshToken = req.cookies['refresh_token'] as string | undefined;
+
+        if (!oldRefreshToken) {
+            throw new ForbiddenException('Failed to refresh section');
+        }
+
+        // Generate new tokens
+        const { accessToken, refreshToken, user: refreshedUser } =
+            await this.authService.refreshTokens(oldRefreshToken);
+
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
             path: '/',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         return {
             access_token: accessToken,
             token_type: 'Bearer',
-            user,
+            user: refreshedUser,
         };
-    }
-
-    @Post('refresh')
-    async refresh(
-        @Req() req: authInterfaces.RequestWithRefreshToken,
-        @ReqUser() me: authInterfaces.RequestUser,
-        @Res({ passthrough: true }) res: Response,
-    ) {
-        const oldRT = req.user.refreshToken;
-
-        if (!oldRT) {
-            throw new ForbiddenException('Failed to refresh section');
-        }
-
-        // Generate new tokens
-        const { accessToken, refreshToken } =
-            await this.authService.refreshTokens(me.sub, oldRT);
-
-        res.cookie('refresh_token', refreshToken, {
-            httpOnly: true,
-            secure: isProd,
-            sameSite: 'lax',
-            path: '/',
-        });
-
-        return { accessToken };
     }
 
     @Post('/logout')
