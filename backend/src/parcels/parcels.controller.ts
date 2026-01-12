@@ -35,7 +35,6 @@ export class ParcelsController {
 	@Post()
 	@Auth('STAFF', 'MANAGER')
 	createParcel(@Body() dto: CreateParcelDTo, @ReqUser() user: authInterfaces.RequestUser) {
-		console.log('req', user)
 		return this.parcelsService.createParcel(dto, user.sub);
 	}
 

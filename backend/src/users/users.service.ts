@@ -6,10 +6,14 @@ import { DatabaseService } from 'src/database/database.service';
 import * as bcrypt from "bcrypt"
 import { ResidentFilterDto } from './dto/resident-filter.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class UsersService {
-    constructor(private readonly databaseService: DatabaseService) { }
+    constructor(
+        private readonly databaseService: DatabaseService,
+        private readonly eventEmitter: EventEmitter2,
+    ) { }
 
     async userExistsByMail(email: string): Promise<boolean> {
         const count = await this.databaseService.user.count({
@@ -122,6 +126,14 @@ export class UsersService {
 
         if (!user) throw new NotFoundException('User not found');
         return user;
+    }
+
+    async getUserEmail(userId: string) {
+        const user = await this.databaseService.user.findUnique({ where: { id: userId }, select: { email: true } });
+        if (!user) throw new NotFoundException("User not found");
+
+        return user.email;
+
     }
 
     private checkAccountStatus(role: UserRole) {

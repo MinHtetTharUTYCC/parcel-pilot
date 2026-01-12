@@ -21,6 +21,7 @@ model User {
   name       String
   phone      String?
   approvedAt DateTime? //for resident approval
+  rejectedAt DateTime? //for resident rejection
 
   refreshToken String?
 
@@ -118,11 +119,9 @@ model Notification {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
-  // Notification content
-  type     NotificationType
-  title    String
-  message  String
-  metadata Json // { parcelId: "123", actionUrl: "/parcels/123" }
+  type    NotificationType
+  title   String
+  message String
 
   isRead Boolean @default(false)
 

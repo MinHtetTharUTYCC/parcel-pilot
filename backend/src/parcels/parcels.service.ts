@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateParcelDTo } from './dto/create-parel.dto';
 import { generatePickupCode } from 'src/common/utils';
@@ -7,10 +7,17 @@ import { RequestUser } from 'src/auth/interfaces/auth.interface';
 import { UpdateParcelDto } from './dto/update-parcel.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { GetParcelsFilterDto } from './dto/get-parcels.filter.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ParcelRegisteredEvent } from 'src/notifications/events/parcel-registered.event';
 
 @Injectable()
 export class ParcelsService {
-	constructor(private readonly databaseService: DatabaseService) { }
+	private logger = new Logger(ParcelsService.name);
+
+	constructor(
+		private databaseService: DatabaseService,
+		private eventEmiiter: EventEmitter2,
+	) { }
 
 	async getParcels(dto: GetParcelsFilterDto) {
 		const { cursor, limit, q } = dto;
@@ -166,8 +173,33 @@ export class ParcelsService {
 						connect: { id: userId }
 					},
 					pickupCode,
+				},
+				select: {
+					id: true,
+					recipientId: true,
+					recipient: {
+						select: {
+							name: true,
+							unitNumber: true,
+						}
+					},
+					pickupCode: true,
+					courier: true,
+					registeredAt: true,
 				}
 			});
+
+			const parcelRegisteredEvent: ParcelRegisteredEvent = {
+				recipientId: parcel.recipientId,
+				parcelId: parcel.id,
+				recipientName: parcel.recipient.name,
+				unitNumber: parcel.recipient.unitNumber,
+				pickupCode: parcel.pickupCode,
+				courier: parcel.courier,
+				registeredAt: parcel.registeredAt,
+			}
+
+			this.eventEmiiter.emit("parcel.registered", parcelRegisteredEvent);
 
 			return parcel;
 		} catch (error) {
@@ -198,6 +230,7 @@ export class ParcelsService {
 	}
 
 	async updateParcelStatus(parcelId: string, status: ParcelStatus) {
+		this.logger.log("Called updateParcelStatus with: ", status)
 		try {
 			await this.databaseService.parcel.update({
 				where: { id: parcelId },
