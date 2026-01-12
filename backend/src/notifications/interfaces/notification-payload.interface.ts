@@ -1,5 +1,6 @@
 import { NotificationType } from "@prisma/client";
 import { NotificationChannel, NotificationPriority } from "../enums/nofiication-type.enum";
+import { CreateWebNotificationDto } from "../services/dto/create-web-notification.dto";
 
 export interface NotificationData {
     recipientName: string;
@@ -12,6 +13,7 @@ export interface NotificationData {
 export interface NotificationPayload {
     type: NotificationType;
     userId: string;
+    email?: string;
     parcelId?: string;
     data: NotificationData;
     channels: NotificationChannel[];
@@ -19,3 +21,4 @@ export interface NotificationPayload {
 }
 
 export type EmailJob = Omit<NotificationPayload, "channels" | "priority"> & { email: string, actionUrl?: string }
+export type WebJob = CreateWebNotificationDto

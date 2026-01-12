@@ -230,7 +230,6 @@ export class ParcelsService {
 	}
 
 	async updateParcelStatus(parcelId: string, status: ParcelStatus) {
-		this.logger.log("Called updateParcelStatus with: ", status)
 		try {
 			await this.databaseService.parcel.update({
 				where: { id: parcelId },

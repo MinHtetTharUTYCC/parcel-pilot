@@ -1,6 +1,6 @@
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
-import { NotificationType } from "@prisma/client";
+import { NotificationType, ParcelStatus } from "@prisma/client";
 import { EmailJob } from "src/notifications/interfaces/notification-payload.interface";
 import { Injectable, Logger } from "@nestjs/common";
 import { getParcelReadyTemplate } from "src/notifications/templates/parcel-ready.template";
@@ -26,22 +26,17 @@ export class EmailNotificationsProcessor extends WorkerHost {
         this.logger.log("🏃‍➡️ EmailNotificationsProcessor initialized");
     }
 
-    async process(job: Job<EmailJob>) {
-        this.logger.log(`🏃‍➡️ Starting job ${job.id} - ${job.name}`);
 
-        switch (job.name) {
-            case "send-email":
-                return await this.handleEmailNotification(job);
-            default:
-                this.logger.warn(`Unknown job name: ${job.name}`);
+    async process(job: Job<EmailJob, any, string>) {
+        if (job.name !== 'send-email') {
+            return; // skip other jobs
         }
-    }
 
-    async handleEmailNotification(job: Job<EmailJob>) {
+        this.logger.log(`🏃‍➡️ Starting email job ${job.id} - ${job.name}`);
+
         const { type, userId, email, parcelId, actionUrl, data } = job.data;
-
         try {
-            console.log(`Processing email notification for user ${userId}, type: ${type}`);
+            console.log(`Processing email notification for user ${userId}, type: ${type} `);
 
             const template = this.getTemplate(type, { ...data, actionUrl });
 
@@ -59,18 +54,19 @@ export class EmailNotificationsProcessor extends WorkerHost {
             this.logger.log(`Email ${EmailSentData.id} sent successfully to ${email} for ${type}`);
 
             if (type === "PARCEL_READY" && parcelId) {
-                await this.parcelsService.updateParcelStatus(parcelId, "READY_FOR_PICKUP").catch(error => {
-                    this.logger.error(`Failed to update stats after sending ${status} email: `, error)
+                await this.parcelsService.updateParcelStatus(parcelId, ParcelStatus.READY_FOR_PICKUP).catch(error => {
+                    this.logger.error(`Failed to update stats after sending ${type} email: `, error)
                 })
             }
 
             // await this.logNotification(userId, type, 'EMAIL', 'SENT');
         } catch (error) {
-            this.logger.error(`Failed to send email to ${email}: ${error.message}`, error.stack);
+            this.logger.error(`Failed to send email to ${email}: ${error.message} `, error.stack);
             // await this.logNotification(userId, type, 'EMAIL', 'FAILED', error.message);
             throw error; // BULL WILL RETRY
         }
     }
+
 
     private getTemplate(type: NotificationType, data: TemplateData): Template {
         switch (type) {
@@ -85,7 +81,7 @@ export class EmailNotificationsProcessor extends WorkerHost {
             case NotificationType.ACCOUNT_REJECTED:
                 return getAccountRejectedTemplate(data);
             default:
-                throw new Error(`Unsupported notification type: ${type}`);
+                throw new Error(`Unsupported notification type: ${type} `);
         }
     }
 
