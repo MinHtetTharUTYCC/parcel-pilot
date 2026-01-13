@@ -78,12 +78,15 @@ model Parcel {
 
   registeredAt DateTime  @default(now())
   pickedUpAt   DateTime?
+  returnedAt   DateTime?
 
   @@index([recipientId])
   @@index([status])
   @@index([pickupCode])
   @@index([receivedById])
   @@index([registeredAt])
+  @@index([pickedUpAt])
+  @@index([returnedAt])
   @@index([orderId])
 }
 
@@ -108,6 +111,7 @@ enum NotificationType {
   PARCEL_RECEIVED
   PARCEL_READY
   PARCEL_PICKED_UP
+  PARCEL_RETURNED
   PICKUP_REMINDER
   ACCOUNT_APPROVED // Resident approved
   ACCOUNT_REJECTED // Resident rejected

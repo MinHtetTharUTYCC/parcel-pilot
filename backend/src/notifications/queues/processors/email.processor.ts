@@ -12,6 +12,7 @@ import { Resend } from "resend";
 import { getAccountApprovedTemplate } from "src/notifications/templates/resident-approved.template";
 import { getAccountRejectedTemplate } from "src/notifications/templates/resident-rejected.template";
 import { ParcelsService } from "src/parcels/parcels.service";
+import { getParcelReturnedTemplate } from "src/notifications/templates/parcel-returned.template";
 
 @Processor('notifications', { concurrency: 5 })
 @Injectable()
@@ -34,7 +35,7 @@ export class EmailNotificationsProcessor extends WorkerHost {
 
         this.logger.log(`🏃‍➡️ Starting email job ${job.id} - ${job.name}`);
 
-        const { type, userId, email, parcelId, actionUrl, data } = job.data;
+        const { type, userId, residentEmail, parcelId, actionUrl, data } = job.data;
         try {
             console.log(`Processing email notification for user ${userId}, type: ${type} `);
 
@@ -51,7 +52,8 @@ export class EmailNotificationsProcessor extends WorkerHost {
 
             if (error) throw error;
 
-            this.logger.log(`Email ${EmailSentData.id} sent successfully to ${email} for ${type}`);
+            this.logger.log(`Email ${EmailSentData.id} sent successfully to ${residentEmail} for ${type}`);
+            const t2 = new Date().getMilliseconds()
 
             if (type === "PARCEL_READY" && parcelId) {
                 await this.parcelsService.updateParcelStatus(parcelId, ParcelStatus.READY_FOR_PICKUP).catch(error => {
@@ -61,7 +63,7 @@ export class EmailNotificationsProcessor extends WorkerHost {
 
             // await this.logNotification(userId, type, 'EMAIL', 'SENT');
         } catch (error) {
-            this.logger.error(`Failed to send email to ${email}: ${error.message} `, error.stack);
+            this.logger.error(`Failed to send email to ${residentEmail}: ${error.message} `, error.stack);
             // await this.logNotification(userId, type, 'EMAIL', 'FAILED', error.message);
             throw error; // BULL WILL RETRY
         }
@@ -74,6 +76,8 @@ export class EmailNotificationsProcessor extends WorkerHost {
                 return getParcelReadyTemplate(data);
             case NotificationType.PARCEL_PICKED_UP:
                 return getParcelPickedUpTemplate(data);
+            case NotificationType.PARCEL_RETURNED:
+                return getParcelReturnedTemplate(data);
             case NotificationType.PICKUP_REMINDER:
                 return getPickupReminderTemplate(data);
             case NotificationType.ACCOUNT_APPROVED:

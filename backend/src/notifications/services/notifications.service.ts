@@ -19,7 +19,7 @@ export class NotificationsService {
                 type: payload.type,
                 userId: payload.userId,
                 parcelId: payload.parcelId,
-                email: payload.email,
+                residentEmail: payload.residentEmail,
                 data: payload.data,
                 actionUrl: getActionUrl(payload.type, payload.parcelId),
             }

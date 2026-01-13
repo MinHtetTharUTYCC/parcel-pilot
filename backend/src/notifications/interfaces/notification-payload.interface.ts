@@ -7,18 +7,20 @@ export interface NotificationData {
     unitNumber: string;
     pickupCode: string;
     courier?: string;
-    registeredAt: Date;
+    registeredAt?: Date;
+    pickedupAt?: Date;
+    returnedAt?: Date;
 }
 
 export interface NotificationPayload {
     type: NotificationType;
     userId: string;
-    email?: string;
+    residentEmail: string;
     parcelId?: string;
     data: NotificationData;
     channels: NotificationChannel[];
     priority?: NotificationPriority;
 }
 
-export type EmailJob = Omit<NotificationPayload, "channels" | "priority"> & { email: string, actionUrl?: string }
+export type EmailJob = Omit<NotificationPayload, "channels" | "priority"> & { actionUrl?: string }
 export type WebJob = CreateWebNotificationDto

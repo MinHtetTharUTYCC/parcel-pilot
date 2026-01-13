@@ -51,9 +51,9 @@ export class ParcelsController {
 	@Auth('STAFF', 'MANAGER')
 	updateStatus(
 		@Param('id') id: string,
-		@Body('status') dto: UpdateParcelStatusDto,
+		@Body() dto: UpdateParcelStatusDto,
 	) {
-		return this.parcelsService.updateParcelStatus(id, dto.status);
+		return this.parcelsService.updateParcelStatus(id, dto.status, true);
 	}
 
 	@Delete()

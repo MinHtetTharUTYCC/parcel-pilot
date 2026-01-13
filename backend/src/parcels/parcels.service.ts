@@ -9,6 +9,8 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { GetParcelsFilterDto } from './dto/get-parcels.filter.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ParcelRegisteredEvent } from 'src/notifications/events/parcel-registered.event';
+import { ParcelPickedupEvent } from 'src/notifications/events/parcel-pickedup.event';
+import { ParcelReturnedEvent } from 'src/notifications/events/parcal-returned.event';
 
 @Injectable()
 export class ParcelsService {
@@ -180,6 +182,7 @@ export class ParcelsService {
 					recipient: {
 						select: {
 							name: true,
+							email: true,
 							unitNumber: true,
 						}
 					},
@@ -193,6 +196,7 @@ export class ParcelsService {
 				recipientId: parcel.recipientId,
 				parcelId: parcel.id,
 				recipientName: parcel.recipient.name,
+				residentEmail: parcel.recipient.email,
 				unitNumber: parcel.recipient.unitNumber,
 				pickupCode: parcel.pickupCode,
 				courier: parcel.courier,
@@ -217,7 +221,8 @@ export class ParcelsService {
 		try {
 			await this.databaseService.parcel.update({
 				where: { id: parcelId },
-				data: { ...dto }
+				data: { ...dto },
+
 			});
 
 			return { parcelId }
@@ -229,12 +234,67 @@ export class ParcelsService {
 		}
 	}
 
-	async updateParcelStatus(parcelId: string, status: ParcelStatus) {
+	async updateParcelStatus(parcelId: string, status: ParcelStatus, notifyResident = false) {
+		console.log(status)
 		try {
-			await this.databaseService.parcel.update({
+			const parcel = await this.databaseService.parcel.update({
 				where: { id: parcelId },
-				data: { status: status }
+				data: { status: status },
+				select: {
+					id: true,
+					recipientId: true,
+					recipient: {
+						select: {
+							name: true,
+							email: true,
+							unitNumber: true,
+						}
+					},
+					pickupCode: true,
+					courier: true,
+					pickedUpAt: true,
+					returnedAt: true,
+
+				}
 			});
+
+
+			if (notifyResident) {
+				console.log(notifyResident)
+				switch (status) {
+					case ParcelStatus.PICKED_UP:
+						console.log("picked_up")
+
+						const parcelPickedupEvent: ParcelPickedupEvent = {
+							recipientId: parcel.recipientId,
+							parcelId: parcel.id,
+							recipientName: parcel.recipient.name,
+							residentEmail: parcel.recipient.email,
+							unitNumber: parcel.recipient.unitNumber,
+							pickupCode: parcel.pickupCode,
+							courier: parcel.courier,
+							pickedupAt: parcel.pickedUpAt,
+						};
+
+						this.eventEmiiter.emit("parcel.pickedup", parcelPickedupEvent)
+						break;
+
+					case ParcelStatus.RETURNED:
+						const parcelReturnedEvent: ParcelReturnedEvent = {
+							recipientId: parcel.recipientId,
+							parcelId: parcel.id,
+							recipientName: parcel.recipient.name,
+							residentEmail: parcel.recipient.email,
+							unitNumber: parcel.recipient.unitNumber,
+							pickupCode: parcel.pickupCode,
+							courier: parcel.courier,
+							returnedAt: parcel.returnedAt,
+						};
+
+						this.eventEmiiter.emit("parcel.returned", parcelReturnedEvent)
+						break;
+				}
+			}
 
 			return { parcelId, status }
 		} catch (error: unknown) {

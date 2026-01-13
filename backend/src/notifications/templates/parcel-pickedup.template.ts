@@ -55,8 +55,8 @@ export function getParcelPickedUpTemplate(data: TemplateData): Template {
             ` : ''}
             
             <div class="footer">
-              <p>If you have any questions about this pickup, please contact building management.</p>
-              <p>Didn't pick up this parcel? Please contact security immediately.</p>
+              <p>If you have any questions about this pickup, please contact the Front Desk.</p>
+              <p>Didn't pick up this parcel? Please contact the Front Desk immediately.</p>
             </div>
           </div>
         </div>
