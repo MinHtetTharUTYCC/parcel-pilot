@@ -1,7 +1,7 @@
 import { NotificationType } from "@prisma/client";
 import { NotificationPayload } from "src/notifications/interfaces/notification-payload.interface";
 
-export function getTile(type: NotificationType) {
+export function getTitle(type: NotificationType) {
     switch (type) {
         case NotificationType.PARCEL_READY:
             return "Your parcel is ready to pickup";
@@ -10,7 +10,7 @@ export function getTile(type: NotificationType) {
         case NotificationType.PARCEL_RETURNED:
             return "Your parcel has been returned to Courier!";
         case NotificationType.PICKUP_REMINDER:
-            return "Your need to pick up your parcel!";
+            return "You need to pick up your parcel!";
         case NotificationType.ACCOUNT_APPROVED:
             return "Your resident account is approved";
         case NotificationType.ACCOUNT_REJECTED:
@@ -33,7 +33,7 @@ export function getMessage(payload: NotificationPayload) {
         case NotificationType.ACCOUNT_APPROVED:
             return "You can now login your resident account";
         case NotificationType.ACCOUNT_REJECTED:
-            return "Contact frontdesk for further assistant";
+            return "Contact front desk for further assistance";
         default:
             return "information update";
     }
@@ -43,7 +43,6 @@ export function getActionUrl(type: NotificationType, parcelId?: string): string 
     switch (type) {
         case NotificationType.PARCEL_READY:
         case NotificationType.PARCEL_PICKED_UP:
-        case NotificationType.PICKUP_REMINDER:
         case NotificationType.PICKUP_REMINDER:
             if (parcelId) {
                 return `/parcels/${parcelId}`

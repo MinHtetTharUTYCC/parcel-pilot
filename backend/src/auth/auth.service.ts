@@ -46,10 +46,10 @@ export class AuthService {
     }
 
     async login(loginDto: LoginDto) {
-        this.logger.log(`User Logged in: ${loginDto.email}`);
-
         //validate user
         const user = await this.usersService.validateUser(loginDto);
+
+        this.logger.log(`User Logged in: ${user.id}`);
 
         await this.usersService.updateLastLogin(user.id);
 
@@ -67,7 +67,6 @@ export class AuthService {
     }
 
     async signup(dto: SignupDto) {
-        this.logger.log(`User registered: ${dto.email}`);
         // check existing
         const userExists = await this.usersService.userExistsByMail(
             dto.email,
@@ -80,10 +79,12 @@ export class AuthService {
         const hashedPwd = await bcrypt.hash(dto.password, 10);
 
         //create user
-        await this.usersService.createNewUser({
+        const newUser = await this.usersService.createNewUser({
             ...dto,
             password: hashedPwd,
         });
+
+        this.logger.log(`User registered: ${newUser.id}`);
 
         return "Created account successfully. Wait for approval."
     }
@@ -118,7 +119,7 @@ export class AuthService {
                 user: {
                     id: user.id,
                     email: user.email,
-                    name: user.email,
+                    name: user.name,
                     role: user.role,
                 }
             };

@@ -1,4 +1,4 @@
-import { generatePickupCode } from "../backend/src/common/utils"
+import { generatePickupCode } from "./src/common/utils"
 
 function main() {
     const code = generatePickupCode();

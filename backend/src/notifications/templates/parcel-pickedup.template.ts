@@ -1,5 +1,16 @@
 import { Template, TemplateData } from "../interfaces/template.interface";
 
+// Validate that URL only uses safe schemes (http:// or https://)
+export function isValidUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export function getParcelPickedUpTemplate(data: TemplateData): Template {
   const { recipientName, unitNumber, pickedUpAt, courier, actionUrl } = data;
 
@@ -13,6 +24,9 @@ export function getParcelPickedUpTemplate(data: TemplateData): Template {
       minute: '2-digit'
     })
     : '';
+
+  // Validate actionUrl to prevent XSS attacks
+  const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
 
   const html = `
       <!DOCTYPE html>
@@ -48,9 +62,9 @@ export function getParcelPickedUpTemplate(data: TemplateData): Template {
             
             <p>Thank you for using our parcel management system!</p>
             
-            ${actionUrl ? `
+            ${validActionUrl ? `
             <div style="text-align: center; margin-top: 30px;">
-              <a href="${actionUrl}" class="button">View Pickup History</a>
+              <a href="${validActionUrl}" class="button">View Pickup History</a>
             </div>
             ` : ''}
             
@@ -65,7 +79,7 @@ export function getParcelPickedUpTemplate(data: TemplateData): Template {
     `;
 
   return {
-    subject: `Parcel Picked Up - ${unitNumber || ''}`,
+    subject: unitNumber ? `Parcel Picked Up - ${unitNumber}` : 'Parcel Picked Up',
     html
   };
 }

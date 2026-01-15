@@ -18,7 +18,7 @@ export function successResponse<T>(
     };
 }
 
-export interface PaginatedRespone<T> extends ApiResponse<T[]> {
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
     meta: {
         page: number;
         limit: number;
@@ -29,7 +29,7 @@ export interface PaginatedRespone<T> extends ApiResponse<T[]> {
     };
 }
 
-export function paginatedRespone<T>(
+export function paginatedResponse<T>(
     data: T[],
     meta: {
         page: number;
@@ -40,7 +40,7 @@ export function paginatedRespone<T>(
         hasPrev: boolean;
     },
     message = "Success"
-): PaginatedRespone<T> {
+): PaginatedResponse<T> {
     return {
         success: true,
         message,

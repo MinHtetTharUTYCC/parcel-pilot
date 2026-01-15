@@ -1,3 +1,3 @@
-import { CreateParcelDTo } from "./create-parel.dto";
+import { CreateParcelDto } from "./create-parel.dto";
 
-export class UpdateParcelDto implements Partial<CreateParcelDTo> { }
+export class UpdateParcelDto implements Partial<CreateParcelDto> { }

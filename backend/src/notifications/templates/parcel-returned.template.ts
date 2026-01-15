@@ -1,20 +1,22 @@
 import { Template, TemplateData } from "../interfaces/template.interface";
+import { isValidUrl } from "./parcel-pickedup.template";
 
 export function getParcelReturnedTemplate(data: TemplateData): Template {
-    const { recipientName, unitNumber, returnedAt, courier, actionUrl } = data;
+  const { recipientName, unitNumber, returnedAt, courier, actionUrl } = data;
+  const formattedDate = returnedAt
+    ? new Date(returnedAt).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    : '';
 
-    const formattedDate = returnedAt
-        ? new Date(returnedAt).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        })
-        : '';
+  const validActionUrl = isValidUrl(actionUrl);
 
-    const html = `
+  const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -56,9 +58,9 @@ export function getParcelReturnedTemplate(data: TemplateData): Template {
               <li>Parcel was damaged or opened</li>
             </ul>
             
-            ${actionUrl ? `
+            ${validActionUrl ? `
             <div style="text-align: center; margin-top: 30px;">
-              <a href="${actionUrl}" class="button">View Parcel Details</a>
+              <a href="${validActionUrl}" class="button">View Parcel Details</a>
             </div>
             ` : ''}
             
@@ -76,8 +78,8 @@ export function getParcelReturnedTemplate(data: TemplateData): Template {
       </html>
     `;
 
-    return {
-        subject: `Parcel Returned - ${unitNumber || ''}`,
-        html
-    };
+  return {
+    subject: unitNumber ? `Parcel Returned - ${unitNumber}` : 'Returned',
+    html
+  };
 }

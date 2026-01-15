@@ -1,4 +1,5 @@
 import { Template, TemplateData } from "../interfaces/template.interface";
+import { isValidUrl } from "./parcel-pickedup.template";
 
 export function getParcelReadyTemplate(data: TemplateData): Template {
   const { recipientName, unitNumber, pickupCode, courier, registeredAt, actionUrl } = data;
@@ -14,6 +15,8 @@ export function getParcelReadyTemplate(data: TemplateData): Template {
       minute: '2-digit'
     })
     : '';
+
+  const validActionUrl = isValidUrl(actionUrl);
 
   const html = `
       <!DOCTYPE html>
@@ -52,11 +55,11 @@ export function getParcelReadyTemplate(data: TemplateData): Template {
               <p>Please present this code when picking up your parcel.</p>
             </div>
             
-            ${actionUrl ? `
+            ${validActionUrl ? `
             <div style="text-align: center; margin-top: 30px;">
-              <a href="${actionUrl}" class="button">View Parcel Details</a>
-            </div>
-            ` : ''}
+              <a href="${validActionUrl}" class="button">View Parcel Details</a>
+    </div>
+      ` : ''}
             
             <div class="footer">
               <p><strong>Pickup Location:</strong> Building Lobby / Concierge Desk</p>
@@ -70,7 +73,7 @@ export function getParcelReadyTemplate(data: TemplateData): Template {
     `;
 
   return {
-    subject: `📦 New Parcel Ready for Pickup - ${unitNumber || ''}`,
+    subject: `📦 New Parcel Ready for Pickup${unitNumber ? ` - ${unitNumber}` : ''}`,
     html
   };
 }

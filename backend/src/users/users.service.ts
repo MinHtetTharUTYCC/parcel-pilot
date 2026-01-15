@@ -56,7 +56,8 @@ export class UsersService {
             select: { id: true, name: true, email: true, password: true, role: true },
         });
 
-        if (!user) throw new NotFoundException('User Not Found');
+        // user not found is unsafe(rabbit suggests)
+        if (!user) throw new BadRequestException('Invalid credentials');
 
         const isPwdValid = await bcrypt.compare(
             dto.password,
@@ -225,7 +226,7 @@ export class UsersService {
             }
         });
 
-        const hasNext = residents.length > 10;
+        const hasNext = residents.length > limit;
         const items = hasNext ? residents.slice(0, -1) : residents;
         const nextCursor = hasNext ? items[items.length - 1].id : null
 
@@ -257,8 +258,7 @@ export class UsersService {
                 }
             }
         });
-
-        const hasNext = staffs.length > 10;
+        const hasNext = staffs.length > limit;
         const items = hasNext ? staffs.slice(0, -1) : staffs;
         const nextCursor = hasNext ? items[items.length - 1].id : null
 

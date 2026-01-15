@@ -13,45 +13,44 @@ import { getAccountApprovedTemplate } from "src/notifications/templates/resident
 import { getAccountRejectedTemplate } from "src/notifications/templates/resident-rejected.template";
 import { ParcelsService } from "src/parcels/parcels.service";
 import { getParcelReturnedTemplate } from "src/notifications/templates/parcel-returned.template";
+import { ConfigService } from "@nestjs/config";
 
 @Processor('email-notifications', { concurrency: 5 })
 @Injectable()
 export class EmailNotificationsProcessor extends WorkerHost {
     private readonly logger = new Logger(EmailNotificationsProcessor.name);
+    private resendEmail: string;
 
     constructor(
         @InjectResend() private readonly resendClient: Resend,
-        private parcelsService: ParcelsService
+        private parcelsService: ParcelsService,
+        private configService: ConfigService
     ) {
         super();
-        this.logger.log("🏃‍➡️ EmailNotificationsProcessor initialized");
 
-        // Check if processor is properly initialized
-        setTimeout(() => {
-            this.logger.debug('Processor is alive and listening');
-        }, 1000);
+        // Validate RESEND_EMAIL during initialization (fail-fast)
+        this.resendEmail = this.configService.get<string>('RESEND_EMAIL');
+        if (!this.resendEmail) {
+            const errorMsg = 'RESEND_EMAIL is not configured. Please set it in environment variables.';
+            this.logger.error(errorMsg);
+            throw new Error(errorMsg);
+        }
     }
 
 
     async process(job: Job<EmailJob, any, string>) {
-        console.log("-----------------------------------------");
-        console.log("🔥 WORKER FOUND JOB:", job.id, "NAME:", job.name);
-        console.log("-----------------------------------------");
         if (job.name !== 'send-email') {
-            console.log("❌ Job name mismatch, returning");
             return; // skip other jobs
         }
 
         this.logger.log(`🏃‍➡️ Starting email job ${job.id} - ${job.name}`);
 
-        const { type, userId, residentEmail, parcelId, actionUrl, data } = job.data;
+        const { type, residentEmail, parcelId, actionUrl, data } = job.data;
         try {
-            console.log(`Processing email notification for user ${userId}, type: ${type} `);
-
             const template = this.getTemplate(type, { ...data, actionUrl });
 
             const { data: EmailSentData, error } = await this.resendClient.emails.send({
-                from: process.env.RESEND_EMAIL,
+                from: this.resendEmail,
                 // TODO:
                 // to: email,
                 to: "minhtettharutycc@gmail.com",

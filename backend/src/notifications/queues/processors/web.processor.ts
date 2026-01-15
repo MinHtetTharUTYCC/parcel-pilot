@@ -20,21 +20,19 @@ export class WebNotificationsProcessor extends WorkerHost {
             return; //skip other jobs
         }
 
-        this.logger.log(`🏃‍➡️ Starting web job ${job.id} - ${job.name}`);
-
         // destructure is only for log use, dto is already same as job in this case
         const { userId, type } = job.data;
 
         try {
-            console.log(`Processing web notification for user ${userId}, type: ${type}`);
-
             const newNotification = await this.webNotificationsService.create(job.data)
 
-            this.logger.log(`Web nofication ${newNotification.id} sent successfully to ${newNotification.userId} for ${type}`);
+            this.logger.log(`Web notification ${newNotification.id} sent successfully to ${newNotification.userId} for ${type}`);
 
             // await this.logNotification(userId, type, 'WEB', 'SENT');
         } catch (error) {
-            this.logger.error(`Failed to send email to ${userId}: ${error.message}`, error.stack);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Failed to send web notification to ${userId}: ${errorMessage}`, errorStack);
             // await this.logNotification(userId, type, 'WEB', 'FAILED', error.message);
             throw error; // BULL WILL RETRY
         }

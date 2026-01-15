@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { NotificationsController } from './notifications.controller';
 import { DatabaseModule } from 'src/database/database.module';
-import { ParcelEventsListner } from './listeners/parcel-events.listner';
+import { ParcelEventsListener } from './listeners/parcel-events.listner';
 import { NotificationsService } from './services/notifications.service';
 import { WebNotificationsService } from './services/web-notifications.service';
 import { BullModule } from '@nestjs/bullmq';
@@ -21,7 +21,7 @@ import { ResidentEventsListener } from './listeners/resident-events.listner';
     providers: [
         NotificationsService,
         WebNotificationsService,
-        ParcelEventsListner,
+        ParcelEventsListener,
         ResidentEventsListener,
         EmailNotificationsProcessor,
         WebNotificationsProcessor],

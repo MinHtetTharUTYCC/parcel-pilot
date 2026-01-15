@@ -1,20 +1,23 @@
 import { Template, TemplateData } from "../interfaces/template.interface";
+import { isValidUrl } from "./parcel-pickedup.template";
 
 export function getAccountApprovedTemplate(data: TemplateData): Template {
-    const { recipientName, unitNumber, approvedAt, actionUrl } = data;
+  const { recipientName, unitNumber, approvedAt, actionUrl } = data;
 
-    const formattedDate = approvedAt
-        ? new Date(approvedAt).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        })
-        : '';
+  const formattedDate = approvedAt
+    ? new Date(approvedAt).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    : '';
 
-    const html = `
+  const validActionUrl = isValidUrl(actionUrl)
+
+  const html = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -71,8 +74,8 @@ export function getAccountApprovedTemplate(data: TemplateData): Template {
           
           <div style="text-align: center; margin: 35px 0;">
             <p><strong>Get started by accessing your account:</strong></p>
-            ${actionUrl ? `
-            <a href="${actionUrl}" class="button" style="color: white;">Access Your Account</a>
+            ${validActionUrl ? `
+            <a href="${validActionUrl}" class="button" style="color: white;">Access Your Account</a>
             ` : ''}
           </div>
           
@@ -87,8 +90,8 @@ export function getAccountApprovedTemplate(data: TemplateData): Template {
     </html>
   `;
 
-    return {
-        subject: `🎉 Account Approved - Welcome to Community Portal (Unit ${unitNumber})`,
-        html
-    };
+  return {
+    subject: `🎉 Account Approved - Welcome to Community Portal (Unit ${unitNumber})`,
+    html
+  };
 }

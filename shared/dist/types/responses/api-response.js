@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.successResponse = successResponse;
-exports.paginatedRespone = paginatedRespone;
+exports.paginatedResponse = paginatedResponse;
 function successResponse(data, message = 'Success', meta) {
     return {
         success: true,
@@ -10,7 +10,7 @@ function successResponse(data, message = 'Success', meta) {
         meta,
     };
 }
-function paginatedRespone(data, meta, message = "Success") {
+function paginatedResponse(data, meta, message = "Success") {
     return {
         success: true,
         message,

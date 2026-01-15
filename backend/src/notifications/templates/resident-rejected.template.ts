@@ -1,20 +1,23 @@
 import { Template, TemplateData } from "../interfaces/template.interface";
+import { isValidUrl } from "./parcel-pickedup.template";
 
 export function getAccountRejectedTemplate(data: TemplateData): Template {
-    const { recipientName, unitNumber, rejectedAt, actionUrl } = data;
+  const { recipientName, unitNumber, rejectedAt, actionUrl } = data;
 
-    const formattedDate = rejectedAt
-        ? new Date(rejectedAt).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        })
-        : '';
+  const formattedDate = rejectedAt
+    ? new Date(rejectedAt).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    : '';
 
-    const html = `
+  const validActionUrl = isValidUrl(actionUrl);
+
+  const html = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -73,8 +76,8 @@ export function getAccountRejectedTemplate(data: TemplateData): Template {
           <div style="text-align: center; margin: 35px 0;">
             <p><strong>What's Next?</strong></p>
             <p>You may reapply after addressing the issues mentioned above.</p>
-            ${actionUrl ? `
-            <a href="${actionUrl}" class="button" style="color: white; margin-top: 15px;">Review Application Guidelines</a>
+            ${validActionUrl ? `
+            <a href="${validActionUrl}" class="button" style="color: white; margin-top: 15px;">Review Application Guidelines</a>
             ` : ''}
           </div>
           
@@ -93,8 +96,8 @@ export function getAccountRejectedTemplate(data: TemplateData): Template {
     </html>
   `;
 
-    return {
-        subject: `⚠️ Account Registration Update - Unit ${unitNumber}`,
-        html
-    };
+  return {
+    subject: `⚠️ Account Registration Update - Unit ${unitNumber}`,
+    html
+  };
 }

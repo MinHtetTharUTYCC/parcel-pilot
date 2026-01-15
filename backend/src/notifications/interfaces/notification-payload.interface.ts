@@ -1,5 +1,5 @@
 import { NotificationType } from "@prisma/client";
-import { NotificationChannel, NotificationPriority } from "../enums/nofiication-type.enum";
+import { NotificationChannel, NotificationPriority } from "../enums/notification-type.enum";
 import { CreateWebNotificationDto } from "../services/dto/create-web-notification.dto";
 
 export interface NotificationData {

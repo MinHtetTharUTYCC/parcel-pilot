@@ -1,24 +1,29 @@
 import { TemplateData, Template } from "../interfaces/template.interface";
+import { isValidUrl } from "./parcel-pickedup.template";
 
 export function getPickupReminderTemplate(data: TemplateData): Template {
-    const { recipientName, unitNumber, pickupCode, registeredAt, reminderDate, actionUrl } = data;
+  const { recipientName, unitNumber, pickupCode, registeredAt, reminderDate, actionUrl } = data;
 
-    const registeredFormatted = registeredAt
-        ? new Date(registeredAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric'
-        })
-        : '';
+  const registeredFormatted = registeredAt
+    ? new Date(registeredAt).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    })
+    : '';
 
-    const reminderFormatted = reminderDate
-        ? new Date(reminderDate).toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric'
-        })
-        : '';
+  const reminderFormatted = reminderDate
+    ? new Date(reminderDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    })
+    : '';
 
-    const html = `
+
+  // Validate actionUrl to prevent XSS attacks
+  const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
+
+  const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -56,9 +61,9 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
               <p><strong>Best picked up by:</strong> ${reminderFormatted}</p>
             </div>
             
-            ${actionUrl ? `
+            ${validActionUrl ? `
             <div style="text-align: center; margin-top: 30px;">
-              <a href="${actionUrl}" class="button">Pick Up Now</a>
+              <a href="${validActionUrl}" class="button">Pick Up Now</a>
             </div>
             ` : ''}
             
@@ -73,8 +78,10 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
       </html>
     `;
 
-    return {
-        subject: `Reminder: Parcel Awaiting Pickup - ${unitNumber || ''}`,
-        html
-    };
+  return {
+    subject: unitNumber
+      ? `Reminder: Parcel Awaiting Pickup - ${unitNumber}`
+      : 'Reminder: Parcel Awaiting Pickup',
+    html
+  };
 }

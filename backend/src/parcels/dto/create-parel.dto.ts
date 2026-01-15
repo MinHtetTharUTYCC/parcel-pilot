@@ -1,33 +1,33 @@
-import { IsOptional, IsString, MinLength } from "class-validator";
+import { Type } from "class-transformer";
+import { IsNumber, IsOptional, IsString, MinLength } from "class-validator";
 
-export class CreateParcelDTo {
+export class CreateParcelDto {
     @IsString()
     recipientId: string;
+    @IsOptional()
+    @IsString()
+    orderId?: string;
 
     @IsOptional()
     @IsString()
-    orderId: string;
+    description?: string;
 
     @IsOptional()
     @IsString()
-    description: string;
+    note?: string;
 
     @IsOptional()
     @IsString()
-    note: string;
-
-
-    @IsOptional()
-    @IsString()
-    imageUrl: string;
+    imageUrl?: string;
 
     @IsOptional()
     @IsString()
-    imageKey: string;
+    imageKey?: string;
 
     @IsOptional()
-    @IsString()
-    imageSize: number;
+    @Type(() => Number)
+    @IsNumber()
+    imageSize?: number;
 
     @IsString()
     @IsOptional()

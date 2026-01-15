@@ -5,7 +5,7 @@ export interface ApiResponse<T> {
     meta?: Record<string, any>;
 }
 export declare function successResponse<T>(data: T, message?: string, meta?: Record<string, any>): ApiResponse<T>;
-export interface PaginatedRespone<T> extends ApiResponse<T[]> {
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
     meta: {
         page: number;
         limit: number;
@@ -15,11 +15,11 @@ export interface PaginatedRespone<T> extends ApiResponse<T[]> {
         hasPrev: boolean;
     };
 }
-export declare function paginatedRespone<T>(data: T[], meta: {
+export declare function paginatedResponse<T>(data: T[], meta: {
     page: number;
     limit: number;
     total: number;
     totalPages: number;
     hasNext: boolean;
     hasPrev: boolean;
-}, message?: string): PaginatedRespone<T>;
+}, message?: string): PaginatedResponse<T>;

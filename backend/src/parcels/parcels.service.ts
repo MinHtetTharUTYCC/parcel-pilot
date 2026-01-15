@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
-import { CreateParcelDTo } from './dto/create-parel.dto';
+import { CreateParcelDto } from './dto/create-parel.dto';
 import { generatePickupCode } from 'src/common/utils';
 import { ParcelStatus, Prisma } from '@prisma/client';
 import { RequestUser } from 'src/auth/interfaces/auth.interface';
@@ -161,7 +161,7 @@ export class ParcelsService {
 		}
 	}
 
-	async createParcel(dto: CreateParcelDTo, userId: string) {
+	async createParcel(dto: CreateParcelDto, userId: string) {
 		const pickupCode = generatePickupCode();
 		const { recipientId, ...restOfDto } = dto;
 		try {

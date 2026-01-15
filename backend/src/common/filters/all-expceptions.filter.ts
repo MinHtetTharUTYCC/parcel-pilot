@@ -36,12 +36,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
                 errorCode = this.getErrorCodeFromStatus(status);
             } else if (typeof exceptionResponse === 'object') {
                 const resp = exceptionResponse as any;
-                message = resp.message || message;
+                message = Array.isArray(resp.message)
+                    ? resp.message[0] || message
+                    : resp.message || message;
                 errors = resp.errors || [];
                 errorCode = resp.errorCode || this.getErrorCodeFromStatus(status);
             }
         } else if (exception instanceof Error) {
-            message = exception.message;
+            // TODO: log the errors
+            message = 'Internal server error';
             errorCode = 'INTERNAL_ERROR';
         }
 

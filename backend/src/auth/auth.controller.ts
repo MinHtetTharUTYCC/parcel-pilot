@@ -54,7 +54,7 @@ export class AuthController {
         const oldRefreshToken = req.cookies['refresh_token'] as string | undefined;
 
         if (!oldRefreshToken) {
-            throw new ForbiddenException('Failed to refresh section');
+            throw new ForbiddenException('Failed to refresh session');
         }
 
         // Generate new tokens

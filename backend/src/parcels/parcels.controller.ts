@@ -3,7 +3,7 @@ import { ParcelsService } from './parcels.service';
 import { ReqUser } from 'src/auth/decorators/req-user.decorator';
 import * as authInterfaces from 'src/auth/interfaces/auth.interface';
 import { Auth } from 'src/auth/decorators/auth.decorator';
-import { CreateParcelDTo } from './dto/create-parel.dto';
+import { CreateParcelDto } from './dto/create-parel.dto';
 import { SuccessResponseInterceptor } from 'src/common/interceptors/success-response.interceptor';
 import { UpdateParcelDto } from './dto/update-parcel.dto';
 import { UpdateParcelStatusDto } from './dto/update-parcel-status.dto';
@@ -22,7 +22,7 @@ export class ParcelsController {
 
 	@Get('mine')
 	@Auth('RESIDENT')
-	getMyParcels(@ReqUser() user: authInterfaces.RequestUser, dto: GetParcelsFilterDto) {
+	getMyParcels(@ReqUser() user: authInterfaces.RequestUser, @Query() dto: GetParcelsFilterDto) {
 		return this.parcelsService.getMyParcels(user.sub, dto);
 	}
 
@@ -34,7 +34,7 @@ export class ParcelsController {
 
 	@Post()
 	@Auth('STAFF', 'MANAGER')
-	createParcel(@Body() dto: CreateParcelDTo, @ReqUser() user: authInterfaces.RequestUser) {
+	createParcel(@Body() dto: CreateParcelDto, @ReqUser() user: authInterfaces.RequestUser) {
 		return this.parcelsService.createParcel(dto, user.sub);
 	}
 
@@ -56,9 +56,9 @@ export class ParcelsController {
 		return this.parcelsService.updateParcelStatus(id, dto.status, true);
 	}
 
-	@Delete()
+	@Delete(':id')
 	@Auth('STAFF', 'MANAGER')
-	deleteParcel(@Body() { parcelId }: { parcelId: string }) {
-		return this.parcelsService.deleteParcel(parcelId)
+	deleteParcel(@Param('id') id: string) {
+		return this.parcelsService.deleteParcel(id);
 	}
 }

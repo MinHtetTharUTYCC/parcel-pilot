@@ -1,3 +1,5 @@
+import { Request } from "express"
+
 export interface JwtPayload {
     sub: string;
     name: string;
@@ -11,6 +13,7 @@ export interface RequestUser {
     name: string;
     role: string;
 }
+
 
 export interface RequestWithRefreshToken extends Request {
     user: RequestUser & { refresh_token: string };

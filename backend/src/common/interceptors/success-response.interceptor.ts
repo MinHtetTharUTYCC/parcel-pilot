@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators"
-import { paginatedRespone, successResponse } from "@parcel-pilot/shared";
+import { paginatedResponse, successResponse } from "@parcel-pilot/shared";
 
 @Injectable()
 export class SuccessResponseInterceptor implements NestInterceptor {
@@ -13,7 +13,7 @@ export class SuccessResponseInterceptor implements NestInterceptor {
 
                 // if paginated data
                 if (data?.data && data?.meta && data.meta.page !== undefined) {
-                    return paginatedRespone(data.data, data.meta)
+                    return paginatedResponse(data.data, data.meta)
                 }
 
                 //wrap raw data in standard success response

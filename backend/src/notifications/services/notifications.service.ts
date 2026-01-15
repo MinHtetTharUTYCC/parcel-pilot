@@ -1,10 +1,10 @@
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable } from "@nestjs/common";
 import { EmailJob, NotificationPayload, WebJob } from "../interfaces/notification-payload.interface";
-import { NotificationChannel, NotificationPriority } from "../enums/nofiication-type.enum";
+import { NotificationChannel, NotificationPriority } from "../enums/notification-type.enum";
 import { WebNotificationsService } from "./web-notifications.service";
 import { CreateWebNotificationDto } from "./dto/create-web-notification.dto";
-import { getActionUrl, getMessage, getTile } from "src/common/notifications/noti-info";
+import { getActionUrl, getMessage, getTitle } from "src/common/notifications/noti-info";
 
 @Injectable()
 export class NotificationsService {
@@ -32,8 +32,8 @@ export class NotificationsService {
                 emailJob,
                 {
                     attempts: 3, backoff: 5000, priority: payload.priority === NotificationPriority.HIGH ? 1 : 3,
-                    removeOnComplete: false,
-                    removeOnFail: false,
+                    removeOnComplete: { count: 1000, age: 24 * 3600 }, // Keep last 1000 or 24h
+                    removeOnFail: { count: 500, age: 7 * 24 * 3600 },  // Keep last 500 or 7 days
                 })
 
             console.log(`✅ Email job ${job.id} added to queue`);
@@ -43,7 +43,7 @@ export class NotificationsService {
             const createWebNotiDto: CreateWebNotificationDto = {
                 userId: payload.userId,
                 type: payload.type,
-                title: getTile(payload.type),
+                title: getTitle(payload.type),
                 message: getMessage(payload),
                 actionUrl: getActionUrl(payload.type, payload.parcelId),
             }

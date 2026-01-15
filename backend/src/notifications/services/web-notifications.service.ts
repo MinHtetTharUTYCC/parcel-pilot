@@ -27,9 +27,11 @@ export class WebNotificationsService {
                 data: { ...dto },
                 select: notificationSelector,
             });
+
             return notificaion;
-        } catch {
-            this.logger.error("Failed to create web notification");
+        } catch (error) {
+            this.logger.error("Failed to create web notification", error);
+            throw error;
         }
     }
 
@@ -39,6 +41,7 @@ export class WebNotificationsService {
         const notifications = await this.databaseService.notification.findMany({
             where: { userId },
             cursor: cursor ? { id: cursor } : undefined,
+            skip: cursor ? 1 : 0,
             take: limit + 1,
             orderBy: { createdAt: 'desc' },
             select: notificationSelector,
