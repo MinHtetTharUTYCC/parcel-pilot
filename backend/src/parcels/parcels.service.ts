@@ -11,6 +11,9 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ParcelRegisteredEvent } from 'src/notifications/events/parcel-registered.event';
 import { ParcelPickedupEvent } from 'src/notifications/events/parcel-pickedup.event';
 import { ParcelReturnedEvent } from 'src/notifications/events/parcal-returned.event';
+import { dot } from 'node:test/reporters';
+import { UpdateParcelStatusDto } from './dto/update-parcel-status.dto';
+import { events } from 'src/common/consts/event-names';
 
 @Injectable()
 export class ParcelsService {
@@ -203,7 +206,7 @@ export class ParcelsService {
 				registeredAt: parcel.registeredAt,
 			}
 
-			this.eventEmiiter.emit("parcel.registered", parcelRegisteredEvent);
+			this.eventEmiiter.emit(events.registered, parcelRegisteredEvent);
 
 			return parcel;
 		} catch (error) {
@@ -222,7 +225,6 @@ export class ParcelsService {
 			await this.databaseService.parcel.update({
 				where: { id: parcelId },
 				data: { ...dto },
-
 			});
 
 			return { parcelId }
@@ -234,12 +236,15 @@ export class ParcelsService {
 		}
 	}
 
-	async updateParcelStatus(parcelId: string, status: ParcelStatus, notifyResident = false) {
-		console.log(status)
+	async pickupParcel(parcelId: string) {
 		try {
 			const parcel = await this.databaseService.parcel.update({
 				where: { id: parcelId },
-				data: { status: status },
+				data: {
+					status: "PICKED_UP",
+					pickedUpAt: new Date(),
+					returnedAt: null,
+				},
 				select: {
 					id: true,
 					recipientId: true,
@@ -253,50 +258,88 @@ export class ParcelsService {
 					pickupCode: true,
 					courier: true,
 					pickedUpAt: true,
-					returnedAt: true,
-
 				}
 			});
 
+			const parcelPickedupEvent: ParcelPickedupEvent = {
+				recipientId: parcel.recipientId,
+				parcelId: parcel.id,
+				recipientName: parcel.recipient.name,
+				residentEmail: parcel.recipient.email,
+				unitNumber: parcel.recipient.unitNumber,
+				pickupCode: parcel.pickupCode,
+				courier: parcel.courier,
+				pickedupAt: parcel.pickedUpAt,
+			};
 
-			if (notifyResident) {
-				console.log(notifyResident)
-				switch (status) {
-					case ParcelStatus.PICKED_UP:
-						console.log("picked_up")
+			this.eventEmiiter.emit(events.pickedup, parcelPickedupEvent);
 
-						const parcelPickedupEvent: ParcelPickedupEvent = {
-							recipientId: parcel.recipientId,
-							parcelId: parcel.id,
-							recipientName: parcel.recipient.name,
-							residentEmail: parcel.recipient.email,
-							unitNumber: parcel.recipient.unitNumber,
-							pickupCode: parcel.pickupCode,
-							courier: parcel.courier,
-							pickedupAt: parcel.pickedUpAt,
-						};
-
-						this.eventEmiiter.emit("parcel.pickedup", parcelPickedupEvent)
-						break;
-
-					case ParcelStatus.RETURNED:
-						const parcelReturnedEvent: ParcelReturnedEvent = {
-							recipientId: parcel.recipientId,
-							parcelId: parcel.id,
-							recipientName: parcel.recipient.name,
-							residentEmail: parcel.recipient.email,
-							unitNumber: parcel.recipient.unitNumber,
-							pickupCode: parcel.pickupCode,
-							courier: parcel.courier,
-							returnedAt: parcel.returnedAt,
-						};
-
-						this.eventEmiiter.emit("parcel.returned", parcelReturnedEvent)
-						break;
-				}
+			return { parcelId, messages: "Marked as pickedup successfully" }
+		} catch (error: unknown) {
+			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
+				throw new NotFoundException("Parcel not found")
 			}
+			throw error;
+		}
+	}
+	async returnParcel(parcelId: string) {
+		try {
+			const parcel = await this.databaseService.parcel.update({
+				where: { id: parcelId },
+				data: {
+					status: "RETURNED",
+					returnedAt: new Date(),
+					pickedUpAt: null,
+				},
+				select: {
+					id: true,
+					recipientId: true,
+					recipient: {
+						select: {
+							name: true,
+							email: true,
+							unitNumber: true,
+						}
+					},
+					pickupCode: true,
+					courier: true,
+					returnedAt: true,
+				}
+			});
 
-			return { parcelId, status }
+			const parcelReturnedEvent: ParcelReturnedEvent = {
+				recipientId: parcel.recipientId,
+				parcelId: parcel.id,
+				recipientName: parcel.recipient.name,
+				residentEmail: parcel.recipient.email,
+				unitNumber: parcel.recipient.unitNumber,
+				pickupCode: parcel.pickupCode,
+				courier: parcel.courier,
+				returnedAt: parcel.returnedAt,
+			};
+
+			this.eventEmiiter.emit(events.returned, parcelReturnedEvent)
+
+			return { parcelId, messages: "Marked as returned successfully" }
+		} catch (error: unknown) {
+			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
+				throw new NotFoundException("Parcel not found")
+			}
+			throw error;
+		}
+	}
+
+	async readyForPickup(parcelId: string) {
+		try {
+			await this.databaseService.parcel.update({
+				where: { id: parcelId },
+				data: {
+					status: "READY_FOR_PICKUP",
+				},
+				select: {
+					id: true,
+				}
+			});
 		} catch (error: unknown) {
 			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
 				throw new NotFoundException("Parcel not found")
@@ -314,6 +357,30 @@ export class ParcelsService {
 				throw new NotFoundException("Parcel not found")
 			}
 		}
+	}
+
+	async getPendingParcels() {
+		const pendingParcels = await this.databaseService.parcel.findMany({
+			where: {
+				status: ParcelStatus.READY_FOR_PICKUP,
+				pickedUpAt: null,
+			},
+			include: {
+				recipient: {
+					select: {
+						id: true,
+						name: true,
+						email: true,
+						unitNumber: true,
+					},
+				},
+			},
+			orderBy: {
+				registeredAt: 'asc',
+			},
+		});
+
+		return pendingParcels;
 	}
 
 }

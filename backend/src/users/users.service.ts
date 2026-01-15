@@ -9,6 +9,7 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ResidentApprovedEvent } from 'src/notifications/events/resident-approved.event';
 import { events } from 'src/common/consts/event-names';
+import { ResidentRejectedEvent } from 'src/notifications/events/resident-rejected.event';
 
 @Injectable()
 export class UsersService {
@@ -170,6 +171,7 @@ export class UsersService {
                 where: { id: residentId },
                 data: {
                     role: "RESIDENT",
+                    rejectedAt: null,
                     approvedAt: new Date(),
                 },
                 select: {
@@ -191,6 +193,59 @@ export class UsersService {
             }
 
             this.eventEmitter.emit(events.approved, approvedEvent);
+
+            return { residentId }
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+                throw new NotFoundException("User record not found")
+            }
+            throw error;
+        }
+    }
+    async rejectResident(residentId: string) {
+        try {
+            // TODO: uncomment
+            // const user = await this.databaseService.user.findUnique({
+            //     where
+            //         : { id: residentId },
+            //     select: { role: true }
+            // })
+
+            // switch (user.role) {
+            //     case "RESIDENT":
+            //         throw new ConflictException("Resident already approved");
+            //     case "STAFF":
+            //     case "MANAGER":
+            //         throw new BadRequestException("Only approved residents");
+
+            // }
+
+            const resident = await this.databaseService.user.update({
+                where: { id: residentId },
+                data: {
+                    role: "RESIDENT_REJECTED",
+                    approvedAt: null,
+                    rejectedAt: new Date(),
+                },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    role: true,
+                    unitNumber: true,
+                    rejectedAt: true,
+                }
+            });
+
+            const rejectedEvent: ResidentRejectedEvent = {
+                recipientId: resident.id,
+                recipientName: resident.name,
+                residentEmail: resident.email,
+                unitNumber: resident.unitNumber,
+                rejectedAt: resident.rejectedAt,
+            }
+
+            this.eventEmitter.emit(events.rejected, rejectedEvent);
 
             return { residentId }
         } catch (error) {

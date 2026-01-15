@@ -26,7 +26,7 @@ export class WebNotificationsProcessor extends WorkerHost {
         try {
             const newNotification = await this.webNotificationsService.create(job.data)
 
-            this.logger.log(`Web notification ${newNotification.id} sent successfully to ${newNotification.userId} for ${type}`);
+            this.logger.log(`Web notification ${newNotification.id} sent successfully to ${userId} for ${type}`);
 
             // await this.logNotification(userId, type, 'WEB', 'SENT');
         } catch (error) {

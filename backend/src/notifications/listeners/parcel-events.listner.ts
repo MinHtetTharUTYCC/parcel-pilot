@@ -7,13 +7,14 @@ import { ParcelRegisteredEvent } from "../events/parcel-registered.event";
 import { ParcelPickedupEvent } from "../events/parcel-pickedup.event";
 import { NotificationData } from "../interfaces/notification-payload.interface";
 import { ParcelReturnedEvent } from "../events/parcal-returned.event";
+import { events } from "src/common/consts/event-names";
 
 @Injectable()
 export class ParcelEventsListener {
 
     constructor(private notificationsService: NotificationsService) { }
 
-    @OnEvent('parcel.registered')
+    @OnEvent(events.registered)
     async handleParcelRegistered(payload: ParcelRegisteredEvent) {
 
         const notificationData = {
@@ -35,7 +36,7 @@ export class ParcelEventsListener {
         }, false);
     }
 
-    @OnEvent('parcel.pickedup')
+    @OnEvent(events.pickedup)
     async parcelPickedup(payload: ParcelPickedupEvent) {
 
         const notificationData = {
@@ -57,7 +58,7 @@ export class ParcelEventsListener {
         }, false);
     }
 
-    @OnEvent('parcel.returned')
+    @OnEvent(events.returned)
     async parcelReturned(payload: ParcelReturnedEvent) {
         const notificationData = {
             recipientName: payload.recipientName,

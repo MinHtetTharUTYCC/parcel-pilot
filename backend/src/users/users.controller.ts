@@ -6,7 +6,6 @@ import { ResidentFilterDto } from './dto/resident-filter.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller('users')
-@Controller('users')
 @UseInterceptors(SuccessResponseInterceptor)
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
@@ -15,6 +14,12 @@ export class UsersController {
     @Auth('STAFF', 'MANAGER')
     approveResident(@Param('id') id: string) {
         return this.usersService.approveResident(id);
+    }
+
+    @Patch(":id/reject")
+    @Auth('STAFF', 'MANAGER')
+    rejectResident(@Param('id') id: string) {
+        return this.usersService.rejectResident(id);
     }
 
     @Get('residents')

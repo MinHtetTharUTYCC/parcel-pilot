@@ -6,6 +6,7 @@ import { ResidentApprovedEvent } from "../events/resident-approved.event";
 import { NotificationType } from "@prisma/client";
 import { NotificationChannel, NotificationPriority } from "../enums/notification-type.enum";
 import { NotificationData } from "../interfaces/notification-payload.interface";
+import { ResidentRejectedEvent } from "../events/resident-rejected.event";
 
 @Injectable()
 export class ResidentEventsListener {
@@ -23,6 +24,26 @@ export class ResidentEventsListener {
 
         await this.notificationsService.sendNotification({
             type: NotificationType.ACCOUNT_APPROVED,
+            userId: payload.recipientId,
+            residentEmail: payload.residentEmail,
+            data: notificationData,
+            channels: [NotificationChannel.EMAIL],
+            priority: NotificationPriority.HIGH
+        });
+
+    }
+
+    @OnEvent(events.rejected)
+    async handleResidentRejected(payload: ResidentRejectedEvent) {
+
+        const notificationData = {
+            recipientName: payload.recipientName,
+            unitNumber: payload.unitNumber,
+            rejectedAtAt: payload.rejectedAt,
+        } as NotificationData;
+
+        await this.notificationsService.sendNotification({
+            type: NotificationType.ACCOUNT_REJECTED,
             userId: payload.recipientId,
             residentEmail: payload.residentEmail,
             data: notificationData,

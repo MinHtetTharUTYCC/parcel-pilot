@@ -37,7 +37,6 @@ model User {
 
   receivedParcels Parcel[]       @relation("ReceivedParcels")
   managedParcels  Parcel[]       @relation("ManagedParcels")
-  pickupLogs      PickupLog[]
   notifications   Notification[]
 
   @@index([email])
@@ -74,7 +73,7 @@ model Parcel {
   receivedById String // staff who registered it
   receivedBy   User   @relation("ManagedParcels", fields: [receivedById], references: [id])
 
-  pickupLogs PickupLog[]
+  // pickupLogs PickupLog?
 
   registeredAt DateTime  @default(now())
   pickedUpAt   DateTime?
@@ -88,23 +87,6 @@ model Parcel {
   @@index([pickedUpAt])
   @@index([returnedAt])
   @@index([orderId])
-}
-
-model PickupLog {
-  id String @id @default(cuid())
-
-  parcelId String
-  parcel   Parcel @relation(fields: [parcelId], references: [id])
-
-  // Who picked up
-  pickedById String // Resident who picked up
-  pickedBy   User   @relation(fields: [pickedById], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([parcelId])
-  @@index([pickedById])
-  @@index([createdAt])
 }
 
 enum NotificationType {

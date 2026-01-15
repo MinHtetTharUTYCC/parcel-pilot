@@ -43,9 +43,9 @@ export class EmailNotificationsProcessor extends WorkerHost {
             return; // skip other jobs
         }
 
-        this.logger.log(`🏃‍➡️ Starting email job ${job.id} - ${job.name}`);
-
         const { type, residentEmail, parcelId, actionUrl, data } = job.data;
+
+        console.log("TYPE:", type)
         try {
             const template = this.getTemplate(type, { ...data, actionUrl });
 
@@ -61,11 +61,10 @@ export class EmailNotificationsProcessor extends WorkerHost {
             if (error) throw error;
 
             this.logger.log(`Email ${EmailSentData.id} sent successfully to ${residentEmail} for ${type}`);
-            const t2 = new Date().getMilliseconds()
 
             if (type === "PARCEL_READY" && parcelId) {
-                await this.parcelsService.updateParcelStatus(parcelId, ParcelStatus.READY_FOR_PICKUP).catch(error => {
-                    this.logger.error(`Failed to update stats after sending ${type} email: `, error)
+                await this.parcelsService.readyForPickup(parcelId).catch(error => {
+                    this.logger.error(`Failed to mark as ready after sending ${type} email: `, error)
                 })
             }
 
@@ -76,8 +75,6 @@ export class EmailNotificationsProcessor extends WorkerHost {
             throw error; // BULL WILL RETRY
         }
     }
-
-
 
     private getTemplate(type: NotificationType, data: TemplateData): Template {
         switch (type) {

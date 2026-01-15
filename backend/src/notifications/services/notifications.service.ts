@@ -15,9 +15,9 @@ export class NotificationsService {
     ) { }
 
 
-    async sendNotification(payload: NotificationPayload, useQueue: boolean = false) {
-        console.log("📤 Adding job to queue...");
+    async sendNotification(payload: NotificationPayload, useQueueForWeb: boolean = false) {
         if (payload.channels.includes(NotificationChannel.EMAIL)) {
+
             const emailJob: EmailJob = {
                 type: payload.type,
                 userId: payload.userId,
@@ -27,16 +27,16 @@ export class NotificationsService {
                 actionUrl: getActionUrl(payload.type, payload.parcelId),
             }
 
-            const job = await this.emailQueue.add(
+            await this.emailQueue.add(
                 'send-email',
                 emailJob,
                 {
-                    attempts: 3, backoff: 5000, priority: payload.priority === NotificationPriority.HIGH ? 1 : 3,
+                    attempts: 3,
+                    backoff: 5000,
+                    priority: payload.priority === NotificationPriority.HIGH ? 1 : 3,
                     removeOnComplete: { count: 1000, age: 24 * 3600 }, // Keep last 1000 or 24h
                     removeOnFail: { count: 500, age: 7 * 24 * 3600 },  // Keep last 500 or 7 days
                 })
-
-            console.log(`✅ Email job ${job.id} added to queue`);
         }
 
         if (payload.channels.includes(NotificationChannel.WEB)) {
@@ -48,14 +48,15 @@ export class NotificationsService {
                 actionUrl: getActionUrl(payload.type, payload.parcelId),
             }
 
-            if (useQueue) {
+            if (useQueueForWeb) {
                 const webJob: WebJob = createWebNotiDto;
                 await this.webQueue.add(
                     'send-web',
                     webJob, {
-                    attempts: 3, backoff: 5000, priority: payload.priority === NotificationPriority.HIGH ? 1 : 3,
-                    removeOnComplete: false,
-                    removeOnFail: false,
+                    attempts: 3, backoff: 5000,
+                    priority: payload.priority === NotificationPriority.HIGH ? 1 : 3,
+                    removeOnComplete: { count: 1000, age: 24 * 3600 }, // Keep last 1000 or 24h
+                    removeOnFail: { count: 500, age: 7 * 24 * 3600 },  // Keep last 500 or 7 days
                 });
             } else {
                 await this.webNotificationService.create(createWebNotiDto);

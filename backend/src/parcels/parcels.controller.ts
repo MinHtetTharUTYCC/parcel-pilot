@@ -38,6 +38,22 @@ export class ParcelsController {
 		return this.parcelsService.createParcel(dto, user.sub);
 	}
 
+	@Patch('pickup/:id')
+	@Auth('STAFF', 'MANAGER')
+	pickupParcel(
+		@Param('id') id: string,
+	) {
+		return this.parcelsService.pickupParcel(id);
+	}
+
+	@Patch('return/:id')
+	@Auth('STAFF', 'MANAGER')
+	returnParcel(
+		@Param('id') id: string,
+	) {
+		return this.parcelsService.returnParcel(id);
+	}
+
 	@Patch(':id')
 	@Auth('STAFF', 'MANAGER')
 	updateParcel(
@@ -47,14 +63,6 @@ export class ParcelsController {
 		return this.parcelsService.updateParcel(dto, id);
 	}
 
-	@Patch(':id/status')
-	@Auth('STAFF', 'MANAGER')
-	updateStatus(
-		@Param('id') id: string,
-		@Body() dto: UpdateParcelStatusDto,
-	) {
-		return this.parcelsService.updateParcelStatus(id, dto.status, true);
-	}
 
 	@Delete(':id')
 	@Auth('STAFF', 'MANAGER')

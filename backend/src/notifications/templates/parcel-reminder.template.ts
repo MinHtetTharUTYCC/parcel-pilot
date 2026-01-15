@@ -2,7 +2,10 @@ import { TemplateData, Template } from "../interfaces/template.interface";
 import { isValidUrl } from "./parcel-pickedup.template";
 
 export function getPickupReminderTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, pickupCode, registeredAt, reminderDate, actionUrl } = data;
+  const { recipientName, unitNumber, pickupCode, registeredAt, orderId, daysWaiting, actionUrl } = data;
+
+  console.log("data", data)
+  console.log('pickupCode:', pickupCode)
 
   const registeredFormatted = registeredAt
     ? new Date(registeredAt).toLocaleDateString('en-US', {
@@ -11,16 +14,10 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
     })
     : '';
 
-  const reminderFormatted = reminderDate
-    ? new Date(reminderDate).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric'
-    })
-    : '';
+  const urgencyMessage = daysWaiting >= 7
+    ? `<p style="color: #dc2626; font-weight: 600;">⚠️ This parcel has been waiting for ${daysWaiting} days. Please pick it up as soon as possible to avoid return shipping.</p>`
+    : `<p>Your parcel has been waiting for ${daysWaiting} day${daysWaiting > 1 ? 's' : ''}.</p>`;
 
-
-  // Validate actionUrl to prevent XSS attacks
   const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
 
   const html = `
@@ -47,6 +44,13 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
             <p>Hello ${recipientName || 'Valued Resident'},</p>
             
             <p>This is a friendly reminder that you have a parcel waiting for pickup.</p>
+
+            ${urgencyMessage}
+                        
+                        <div class="info-box">
+                            <p><strong>Order ID:</strong> ${orderId}</p>
+                            <p><strong>Days waiting:</strong> ${daysWaiting}</p>
+                        </div>
             
             <div class="reminder-box">
               <p><strong>Reminder:</strong> Your parcel has been waiting since ${registeredFormatted}.</p>
@@ -58,19 +62,17 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
               <p><strong>Unit Number:</strong> ${unitNumber || 'N/A'}</p>
               <p><strong>Pickup Code:</strong></p>
               <div class="code">${pickupCode || 'N/A'}</div>
-              <p><strong>Best picked up by:</strong> ${reminderFormatted}</p>
             </div>
             
             ${validActionUrl ? `
             <div style="text-align: center; margin-top: 30px;">
-              <a href="${validActionUrl}" class="button">Pick Up Now</a>
+              <a href="${validActionUrl}" class="button">View Parcel Details</a>
             </div>
             ` : ''}
             
             <div class="footer">
-              <p><strong>Pickup Location:</strong> Building Lobby / Concierge Desk</p>
-              <p><strong>Hours:</strong> 24/7</p>
-              <p>After 7 days, unclaimed parcels may incur storage fees or be returned to sender.</p>
+                <p>This is an automated reminder from Parcel Pilot</p>
+                <p>If you have any questions, please contact the management office</p>
             </div>
           </div>
         </div>
@@ -79,9 +81,7 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
     `;
 
   return {
-    subject: unitNumber
-      ? `Reminder: Parcel Awaiting Pickup - ${unitNumber}`
-      : 'Reminder: Parcel Awaiting Pickup',
+    subject: `Reminder: Your parcel is ready for pickup${daysWaiting >= 7 ? ' (Urgent)' : ''}`,
     html
   };
 }

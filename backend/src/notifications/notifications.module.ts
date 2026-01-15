@@ -9,9 +9,13 @@ import { EmailNotificationsProcessor } from './queues/processors/email.processor
 import { ParcelsModule } from 'src/parcels/parcels.module';
 import { WebNotificationsProcessor } from './queues/processors/web.processor';
 import { ResidentEventsListener } from './listeners/resident-events.listner';
+import { ScheduleModule } from '@nestjs/schedule';
+import { PickupReminderCron } from './cron/pick-up-reminder.cron';
 
 @Module({
-    imports: [DatabaseModule,
+    imports: [
+        DatabaseModule,
+        ScheduleModule.forRoot(),
         BullModule.registerQueue(
             { name: "email-notifications" },
             { name: "web-notifications" },
@@ -24,7 +28,9 @@ import { ResidentEventsListener } from './listeners/resident-events.listner';
         ParcelEventsListener,
         ResidentEventsListener,
         EmailNotificationsProcessor,
-        WebNotificationsProcessor],
+        WebNotificationsProcessor,
+        PickupReminderCron,
+    ],
     exports: [NotificationsService, WebNotificationsService]
 })
 export class NotificationsModule { }

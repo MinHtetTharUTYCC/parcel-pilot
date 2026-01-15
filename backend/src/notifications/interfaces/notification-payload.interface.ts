@@ -6,12 +6,15 @@ export interface NotificationData {
     recipientName: string;
     unitNumber: string;
     pickupCode?: string;
+    orderId?: string;
     courier?: string;
 
     // parcel dates
     registeredAt?: Date;
     pickedupAt?: Date;
     returnedAt?: Date;
+
+    daysWaiting?: number;
 
     // resident dates
     approvedAt?: Date;
