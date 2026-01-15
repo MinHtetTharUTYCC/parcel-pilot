@@ -10,10 +10,13 @@ import { getActionUrl, getMessage, getTile } from "src/common/notifications/noti
 export class NotificationsService {
     constructor(
         private webNotificationService: WebNotificationsService,
-        @InjectQueue('notifications') private notificationsQueue,
-    ) {
-    }
+        @InjectQueue('email-notifications') private emailQueue,
+        @InjectQueue('web-notifications') private webQueue,
+    ) { }
+
+
     async sendNotification(payload: NotificationPayload, useQueue: boolean = false) {
+        console.log("📤 Adding job to queue...");
         if (payload.channels.includes(NotificationChannel.EMAIL)) {
             const emailJob: EmailJob = {
                 type: payload.type,
@@ -24,10 +27,16 @@ export class NotificationsService {
                 actionUrl: getActionUrl(payload.type, payload.parcelId),
             }
 
-            await this.notificationsQueue.add(
+            const job = await this.emailQueue.add(
                 'send-email',
                 emailJob,
-                { attempts: 3, backoff: 5000, priority: payload.priority === NotificationPriority.HIGH ? 1 : 3 })
+                {
+                    attempts: 3, backoff: 5000, priority: payload.priority === NotificationPriority.HIGH ? 1 : 3,
+                    removeOnComplete: false,
+                    removeOnFail: false,
+                })
+
+            console.log(`✅ Email job ${job.id} added to queue`);
         }
 
         if (payload.channels.includes(NotificationChannel.WEB)) {
@@ -41,10 +50,12 @@ export class NotificationsService {
 
             if (useQueue) {
                 const webJob: WebJob = createWebNotiDto;
-                await this.notificationsQueue.add(
+                await this.webQueue.add(
                     'send-web',
                     webJob, {
                     attempts: 3, backoff: 5000, priority: payload.priority === NotificationPriority.HIGH ? 1 : 3,
+                    removeOnComplete: false,
+                    removeOnFail: false,
                 });
             } else {
                 await this.webNotificationService.create(createWebNotiDto);

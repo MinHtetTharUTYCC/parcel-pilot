@@ -14,7 +14,7 @@ import { getAccountRejectedTemplate } from "src/notifications/templates/resident
 import { ParcelsService } from "src/parcels/parcels.service";
 import { getParcelReturnedTemplate } from "src/notifications/templates/parcel-returned.template";
 
-@Processor('notifications', { concurrency: 5 })
+@Processor('email-notifications', { concurrency: 5 })
 @Injectable()
 export class EmailNotificationsProcessor extends WorkerHost {
     private readonly logger = new Logger(EmailNotificationsProcessor.name);
@@ -25,11 +25,20 @@ export class EmailNotificationsProcessor extends WorkerHost {
     ) {
         super();
         this.logger.log("🏃‍➡️ EmailNotificationsProcessor initialized");
+
+        // Check if processor is properly initialized
+        setTimeout(() => {
+            this.logger.debug('Processor is alive and listening');
+        }, 1000);
     }
 
 
     async process(job: Job<EmailJob, any, string>) {
+        console.log("-----------------------------------------");
+        console.log("🔥 WORKER FOUND JOB:", job.id, "NAME:", job.name);
+        console.log("-----------------------------------------");
         if (job.name !== 'send-email') {
+            console.log("❌ Job name mismatch, returning");
             return; // skip other jobs
         }
 
@@ -68,6 +77,7 @@ export class EmailNotificationsProcessor extends WorkerHost {
             throw error; // BULL WILL RETRY
         }
     }
+
 
 
     private getTemplate(type: NotificationType, data: TemplateData): Template {

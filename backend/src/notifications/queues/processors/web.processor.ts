@@ -4,7 +4,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { WebJob } from "src/notifications/interfaces/notification-payload.interface";
 import { WebNotificationsService } from "src/notifications/services/web-notifications.service";
 
-@Processor('notifications', { concurrency: 5 })
+@Processor('web-notifications', { concurrency: 5 })
 @Injectable()
 export class WebNotificationsProcessor extends WorkerHost {
     private readonly logger = new Logger(WebNotificationsProcessor.name);

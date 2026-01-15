@@ -5,11 +5,17 @@ import { CreateWebNotificationDto } from "../services/dto/create-web-notificatio
 export interface NotificationData {
     recipientName: string;
     unitNumber: string;
-    pickupCode: string;
+    pickupCode?: string;
     courier?: string;
+
+    // parcel dates
     registeredAt?: Date;
     pickedupAt?: Date;
     returnedAt?: Date;
+
+    // resident dates
+    approvedAt?: Date;
+    rejectedAt?: Date;
 }
 
 export interface NotificationPayload {

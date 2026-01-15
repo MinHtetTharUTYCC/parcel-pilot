@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, UserRole } from '@prisma/client';
 import { LoginDto } from 'src/auth/dto/login.dto';
 import { SignupDto } from 'src/auth/dto/signup.dto';
@@ -7,6 +7,8 @@ import * as bcrypt from "bcrypt"
 import { ResidentFilterDto } from './dto/resident-filter.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ResidentApprovedEvent } from 'src/notifications/events/resident-approved.event';
+import { events } from 'src/common/consts/event-names';
 
 @Injectable()
 export class UsersService {
@@ -147,15 +149,47 @@ export class UsersService {
 
     async approveResident(residentId: string) {
         try {
-            await this.databaseService.user.update({
+            // TODO: uncomment
+            // const user = await this.databaseService.user.findUnique({
+            //     where
+            //         : { id: residentId },
+            //     select: { role: true }
+            // })
+
+            // switch (user.role) {
+            //     case "RESIDENT":
+            //         throw new ConflictException("Resident already approved");
+            //     case "STAFF":
+            //     case "MANAGER":
+            //         throw new BadRequestException("Only approved residents");
+
+            // }
+
+            const resident = await this.databaseService.user.update({
                 where: { id: residentId },
                 data: {
                     role: "RESIDENT",
                     approvedAt: new Date(),
+                },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    role: true,
+                    unitNumber: true,
+                    approvedAt: true,
                 }
             });
 
-            // TODO: mailing
+            const approvedEvent: ResidentApprovedEvent = {
+                recipientId: resident.id,
+                recipientName: resident.name,
+                residentEmail: resident.email,
+                unitNumber: resident.unitNumber,
+                approvedAt: resident.approvedAt,
+            }
+
+            this.eventEmitter.emit(events.approved, approvedEvent);
 
             return { residentId }
         } catch (error) {

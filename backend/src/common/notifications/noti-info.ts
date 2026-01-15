@@ -48,6 +48,8 @@ export function getActionUrl(type: NotificationType, parcelId?: string): string 
             if (parcelId) {
                 return `/parcels/${parcelId}`
             }
+        case NotificationType.ACCOUNT_APPROVED:
+            return `${process.env.FRONTEND_URL}/login`;
     }
 
     return undefined;

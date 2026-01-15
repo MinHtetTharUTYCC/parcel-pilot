@@ -8,11 +8,23 @@ import { BullModule } from '@nestjs/bullmq';
 import { EmailNotificationsProcessor } from './queues/processors/email.processor';
 import { ParcelsModule } from 'src/parcels/parcels.module';
 import { WebNotificationsProcessor } from './queues/processors/web.processor';
+import { ResidentEventsListener } from './listeners/resident-events.listner';
 
 @Module({
-    imports: [DatabaseModule, BullModule.registerQueue({ name: "notifications" }), ParcelsModule],
+    imports: [DatabaseModule,
+        BullModule.registerQueue(
+            { name: "email-notifications" },
+            { name: "web-notifications" },
+        ),
+        ParcelsModule],
     controllers: [NotificationsController],
-    providers: [NotificationsService, WebNotificationsService, ParcelEventsListner, EmailNotificationsProcessor, WebNotificationsProcessor],
+    providers: [
+        NotificationsService,
+        WebNotificationsService,
+        ParcelEventsListner,
+        ResidentEventsListener,
+        EmailNotificationsProcessor,
+        WebNotificationsProcessor],
     exports: [NotificationsService, WebNotificationsService]
 })
 export class NotificationsModule { }

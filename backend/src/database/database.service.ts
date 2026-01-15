@@ -10,8 +10,8 @@ export class DatabaseService extends PrismaClient implements OnModuleInit, OnMod
 
     constructor() {
         // instantiate the driver instance
-        // const connectionString = process.env.DATABASE_URL;
-        const connectionString = "postgresql://condo_admin:condo_admin@localhost:5432/condo_parcel?schema=public";
+        const connectionString = process.env.DATABASE_URL;
+        // const connectionString = "postgresql://condo_admin:condo_admin@localhost:5432/condo_parcel?schema=public";
         if (!connectionString) {
             throw new Error("DATABASE_URL environment is not set");
         }
