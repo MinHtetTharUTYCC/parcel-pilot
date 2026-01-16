@@ -1,11 +1,11 @@
+import { Attachment } from "resend";
 import { TemplateData, Template } from "../interfaces/template.interface";
 import { isValidUrl } from "./parcel-pickedup.template";
 
 export function getPickupReminderTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, pickupCode, registeredAt, orderId, daysWaiting, actionUrl } = data;
+  const { recipientName, unitNumber, pickupCode, registeredAt, orderId, daysWaiting, imgUrl, actionUrl } = data;
 
-  console.log("data", data)
-  console.log('pickupCode:', pickupCode)
+  console.log("imgUrl", imgUrl)
 
   const registeredFormatted = registeredAt
     ? new Date(registeredAt).toLocaleDateString('en-US', {
@@ -19,6 +19,12 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
     : `<p>Your parcel has been waiting for ${daysWaiting} day${daysWaiting > 1 ? 's' : ''}.</p>`;
 
   const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
+
+  const attachments: Attachment[] = imgUrl ? [{
+    path: imgUrl,
+    filename: 'parcel.jpg',
+
+  }] : []
 
   const html = `
       <!DOCTYPE html>
@@ -82,6 +88,7 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
 
   return {
     subject: `Reminder: Your parcel is ready for pickup${daysWaiting >= 7 ? ' (Urgent)' : ''}`,
-    html
+    html,
+    attachments,
   };
 }

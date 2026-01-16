@@ -98,6 +98,7 @@ export function getAccountRejectedTemplate(data: TemplateData): Template {
 
   return {
     subject: `⚠️ Account Registration Update - Unit ${unitNumber}`,
-    html
+    html,
+    attachments: [],
   };
 }

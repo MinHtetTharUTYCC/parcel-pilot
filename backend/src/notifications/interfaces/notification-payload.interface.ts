@@ -9,6 +9,8 @@ export interface NotificationData {
     orderId?: string;
     courier?: string;
 
+    imgUrl?: string;
+
     // parcel dates
     registeredAt?: Date;
     pickedupAt?: Date;

@@ -92,6 +92,7 @@ export function getAccountApprovedTemplate(data: TemplateData): Template {
 
   return {
     subject: `🎉 Account Approved - Welcome to Community Portal (Unit ${unitNumber})`,
-    html
+    html,
+    attachments: [],
   };
 }

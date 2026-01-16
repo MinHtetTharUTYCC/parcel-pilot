@@ -1,3 +1,4 @@
+import { Attachment } from "resend";
 import { Template, TemplateData } from "../interfaces/template.interface";
 
 // Validate that URL only uses safe schemes (http:// or https://)
@@ -12,7 +13,7 @@ export function isValidUrl(url: string | null | undefined): boolean {
 }
 
 export function getParcelPickedUpTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, pickedUpAt, courier, actionUrl } = data;
+  const { recipientName, unitNumber, pickedUpAt, courier, imgUrl, actionUrl } = data;
 
   const formattedDate = pickedUpAt
     ? new Date(pickedUpAt).toLocaleDateString('en-US', {
@@ -24,6 +25,12 @@ export function getParcelPickedUpTemplate(data: TemplateData): Template {
       minute: '2-digit'
     })
     : '';
+
+  const attachments: Attachment[] = imgUrl ? [{
+    path: imgUrl,
+    filename: 'parcel.jpg',
+
+  }] : []
 
   // Validate actionUrl to prevent XSS attacks
   const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
@@ -80,6 +87,7 @@ export function getParcelPickedUpTemplate(data: TemplateData): Template {
 
   return {
     subject: unitNumber ? `Parcel Picked Up - ${unitNumber}` : 'Parcel Picked Up',
-    html
+    html,
+    attachments: attachments,
   };
 }

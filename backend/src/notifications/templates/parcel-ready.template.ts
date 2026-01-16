@@ -1,12 +1,13 @@
+import { Attachment } from "resend";
 import { Template, TemplateData } from "../interfaces/template.interface";
 import { isValidUrl } from "./parcel-pickedup.template";
 
 export function getParcelReadyTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, pickupCode, courier, registeredAt, actionUrl } = data;
+  const { recipientName, unitNumber, pickupCode, courier, registeredAt, imgUrl, actionUrl } = data;
 
   // Format date if provided
   const formattedDate = registeredAt
-    ? new Date(registeredAt).toLocaleDateString('en-US', {
+    ? new Date(registeredAt).toLocaleString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -15,6 +16,11 @@ export function getParcelReadyTemplate(data: TemplateData): Template {
       minute: '2-digit'
     })
     : '';
+
+  const attachments: Attachment[] = imgUrl ? [{
+    path: imgUrl,
+    filename: 'parcel.jpg',
+  }] : []
 
   const validActionUrl = isValidUrl(actionUrl);
 
@@ -74,6 +80,7 @@ export function getParcelReadyTemplate(data: TemplateData): Template {
 
   return {
     subject: `📦 New Parcel Ready for Pickup${unitNumber ? ` - ${unitNumber}` : ''}`,
-    html
+    html,
+    attachments: attachments,
   };
 }

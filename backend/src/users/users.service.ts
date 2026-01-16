@@ -10,6 +10,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ResidentApprovedEvent } from 'src/notifications/events/resident-approved.event';
 import { events } from 'src/common/consts/event-names';
 import { ResidentRejectedEvent } from 'src/notifications/events/resident-rejected.event';
+import { CreateStaffDto } from './dto/create-staff.dto';
 
 @Injectable()
 export class UsersService {
@@ -321,5 +322,27 @@ export class UsersService {
             data: items,
             meta: { limit, hasNext, nextCursor }
         }
+    }
+
+    async createStaff(dto: CreateStaffDto) {
+        const pwdHashed = await bcrypt.hash(dto.password, 10);
+
+        const staff = await this.databaseService.user.create({
+            data: {
+                name: dto.name,
+                email: dto.email,
+                password: pwdHashed,
+            },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                imageKey: true,
+                imageUrl: true,
+                createdAt: true,
+            }
+        });
+
+        return { staff };
     }
 }

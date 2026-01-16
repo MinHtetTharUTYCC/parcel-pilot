@@ -13,6 +13,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ResendModule } from 'nest-resend';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BullModule } from '@nestjs/bullmq';
+import { CloudflareR2Module } from './cloudflare-r2/cloudflareR2.module';
 
 @Module({
 	imports: [
@@ -40,6 +41,7 @@ import { BullModule } from '@nestjs/bullmq';
 		DatabaseModule, AuthModule,
 		UsersModule,
 		NotificationsModule,
+		CloudflareR2Module,
 	],
 	controllers: [AppController],
 	providers: [AppService, {

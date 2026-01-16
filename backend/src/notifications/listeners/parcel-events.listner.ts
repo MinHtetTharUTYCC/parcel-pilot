@@ -22,6 +22,7 @@ export class ParcelEventsListener {
             unitNumber: payload.unitNumber,
             pickupCode: payload.pickupCode,
             courier: payload.courier,
+            imgUrl: payload.imageUrl,
             registeredAt: payload.registeredAt,
         } as NotificationData;
 
@@ -44,6 +45,7 @@ export class ParcelEventsListener {
             unitNumber: payload.unitNumber,
             pickupCode: payload.pickupCode,
             courier: payload.courier,
+            imgUrl: payload.imageUrl,
             pickedupAt: payload.pickedupAt,
         } as NotificationData;
 
@@ -65,6 +67,7 @@ export class ParcelEventsListener {
             unitNumber: payload.unitNumber,
             pickupCode: payload.pickupCode,
             courier: payload.courier,
+            imgUrl: payload.imageUrl,
             returnedAt: payload.returnedAt,
         } as NotificationData;
 

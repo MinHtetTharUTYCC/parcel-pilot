@@ -45,7 +45,6 @@ export class EmailNotificationsProcessor extends WorkerHost {
 
         const { type, residentEmail, parcelId, actionUrl, data } = job.data;
 
-        console.log("TYPE:", type)
         try {
             const template = this.getTemplate(type, { ...data, actionUrl });
 
@@ -56,6 +55,7 @@ export class EmailNotificationsProcessor extends WorkerHost {
                 to: "minhtettharutycc@gmail.com",
                 subject: template.subject,
                 html: template.html,
+                attachments: template.attachments,
             })
 
             if (error) throw error;

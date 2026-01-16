@@ -1,8 +1,9 @@
+import { Attachment } from "resend";
 import { Template, TemplateData } from "../interfaces/template.interface";
 import { isValidUrl } from "./parcel-pickedup.template";
 
 export function getParcelReturnedTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, returnedAt, courier, actionUrl } = data;
+  const { recipientName, unitNumber, returnedAt, courier, imgUrl, actionUrl } = data;
   const formattedDate = returnedAt
     ? new Date(returnedAt).toLocaleString('en-US', {
       weekday: 'long',
@@ -13,6 +14,12 @@ export function getParcelReturnedTemplate(data: TemplateData): Template {
       minute: '2-digit'
     })
     : '';
+
+  const attachments: Attachment[] = imgUrl ? [{
+    path: imgUrl,
+    filename: 'parcel.jpg',
+
+  }] : []
 
   const validActionUrl = isValidUrl(actionUrl);
 
@@ -80,6 +87,7 @@ export function getParcelReturnedTemplate(data: TemplateData): Template {
 
   return {
     subject: unitNumber ? `Parcel Returned - ${unitNumber}` : 'Returned',
-    html
+    html,
+    attachments: attachments,
   };
 }

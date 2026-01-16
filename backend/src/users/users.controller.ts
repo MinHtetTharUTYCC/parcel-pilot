@@ -1,10 +1,11 @@
-import { Controller, Get, Param, Patch, Query, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { SuccessResponseInterceptor } from 'src/common/interceptors/success-response.interceptor';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { ResidentFilterDto } from './dto/resident-filter.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { CreateStaffDto } from './dto/create-staff.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth('access-token')
@@ -141,7 +142,7 @@ export class UsersController {
     @Auth('MANAGER')
     @ApiOperation({
         summary: 'Get Staff List',
-        description: 'Retrieve a list of staff members. Only MANAGER role can access this.',
+        description: 'Retrieve a list of staff members. Only MANAGER role can access this',
     })
     @ApiQuery({
         type: PaginationDto,
@@ -182,5 +183,11 @@ export class UsersController {
     })
     getStaffs(@Query() dto: PaginationDto) {
         return this.usersService.getStaffs(dto);
+    }
+
+    @Post('staffs')
+    @Auth('MANAGER')
+    createStaff(@Body() dto: CreateStaffDto) {
+        return this.usersService.createStaff(dto);
     }
 }

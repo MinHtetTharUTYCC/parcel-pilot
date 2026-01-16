@@ -6,5 +6,6 @@ export class ParcelRegisteredEvent {
     unitNumber: string;
     pickupCode: string;
     courier: string | null;
+    imageUrl: string;
     registeredAt: Date;
 }

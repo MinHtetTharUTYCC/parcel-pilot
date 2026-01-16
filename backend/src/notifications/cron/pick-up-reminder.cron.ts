@@ -54,6 +54,7 @@ export class PickupReminderCron {
                                 unitNumber: parcel.recipient.unitNumber,
                                 orderId: parcel.orderId || 'N/A',
                                 pickupCode: parcel.pickupCode,
+                                imgUrl: parcel.imageUrl,
                                 daysWaiting: daysWaiting,
                                 registeredAt: parcel.registeredAt,
                             },

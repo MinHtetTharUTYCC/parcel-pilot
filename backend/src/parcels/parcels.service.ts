@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateParcelDto } from './dto/create-parel.dto';
 import { generatePickupCode } from 'src/common/utils';
-import { ParcelStatus, Prisma } from '@prisma/client';
+import { ParcelStatus, Prisma, UserRole } from '@prisma/client';
 import { RequestUser } from 'src/auth/interfaces/auth.interface';
 import { UpdateParcelDto } from './dto/update-parcel.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
@@ -11,20 +11,18 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ParcelRegisteredEvent } from 'src/notifications/events/parcel-registered.event';
 import { ParcelPickedupEvent } from 'src/notifications/events/parcel-pickedup.event';
 import { ParcelReturnedEvent } from 'src/notifications/events/parcal-returned.event';
-import { dot } from 'node:test/reporters';
-import { UpdateParcelStatusDto } from './dto/update-parcel-status.dto';
 import { events } from 'src/common/consts/event-names';
+import { CloudflareR2Service, ImageUploadOptions } from 'src/cloudflare-r2/cloudflareR2.service';
 
 @Injectable()
 export class ParcelsService {
-	private logger = new Logger(ParcelsService.name);
-
 	constructor(
 		private databaseService: DatabaseService,
 		private eventEmiiter: EventEmitter2,
+		private cloudflareR2Servie: CloudflareR2Service,
 	) { }
 
-	async getParcels(dto: GetParcelsFilterDto) {
+	async getParcels(user: RequestUser, dto: GetParcelsFilterDto) {
 		const { cursor, limit, q } = dto;
 		const whereCondition: Prisma.ParcelWhereInput = {};
 
@@ -58,14 +56,7 @@ export class ParcelsService {
 			where: whereCondition,
 			take: limit + 1,
 			orderBy: { registeredAt: 'desc' },
-			include: {
-				recipient: {
-					select: {
-						name: true,
-						unitNumber: true,
-					}
-				}
-			}
+			include: this.getIncludeForParcel(user.role as UserRole)
 		});
 
 		const hasNext = parcels.length > limit;
@@ -107,14 +98,7 @@ export class ParcelsService {
 			orderBy: {
 				registeredAt: 'desc',
 			},
-			include: {
-				recipient: {
-					select: {
-						name: true,
-						unitNumber: true,
-					}
-				}
-			}
+			include: this.getIncludeForParcel(UserRole.RESIDENT),
 		});
 
 		const hasNext = parcels.length > limit;
@@ -132,7 +116,7 @@ export class ParcelsService {
 
 		const parcel = await this.databaseService.parcel.findUnique({
 			where: whereClause,
-			include: this.getIncludeForParcel(user.role),
+			include: this.getIncludeForParcel(user.role as UserRole),
 		});
 
 		if (!parcel) {
@@ -142,9 +126,16 @@ export class ParcelsService {
 		return parcel;
 	}
 
-	private getIncludeForParcel(role: string): Prisma.ParcelInclude {
+	private getIncludeForParcel(role: UserRole): Prisma.ParcelInclude {
 		const baseInclude = {
-			recipient: { select: { name: true, unitNumber: true } }
+			recipient: {
+				select: {
+					name: true,
+					unitNumber: true,
+				}
+			},
+			imageKey: true,
+			imageUrl: true,
 		};
 
 		switch (role) {
@@ -153,7 +144,6 @@ export class ParcelsService {
 				return {
 					...baseInclude,
 					receivedBy: { select: { name: true, email: true } },
-					pickupLogs: { orderBy: { createdAt: 'desc' } }
 				};
 
 			case 'RESIDENT':
@@ -164,13 +154,23 @@ export class ParcelsService {
 		}
 	}
 
-	async createParcel(dto: CreateParcelDto, userId: string) {
+	async createParcel(dto: CreateParcelDto, file: Express.Multer.File, userId: string) {
 		const pickupCode = generatePickupCode();
 		const { recipientId, ...restOfDto } = dto;
+
+		const options: ImageUploadOptions = {
+			folder: 'parcels',
+			maxSize: 10 * 1024 * 1024,
+		}
+
+		const uploadResult = await this.cloudflareR2Servie.uploadImage(file, options);
+
 		try {
 			const parcel = await this.databaseService.parcel.create({
 				data: {
 					...restOfDto,
+					imageKey: uploadResult.key,
+					imageUrl: uploadResult.url,
 					recipient: {
 						connect: { id: recipientId }
 					},
@@ -189,6 +189,8 @@ export class ParcelsService {
 							unitNumber: true,
 						}
 					},
+					imageKey: true,
+					imageUrl: true,
 					pickupCode: true,
 					courier: true,
 					registeredAt: true,
@@ -203,6 +205,7 @@ export class ParcelsService {
 				unitNumber: parcel.recipient.unitNumber,
 				pickupCode: parcel.pickupCode,
 				courier: parcel.courier,
+				imageUrl: parcel.imageUrl,
 				registeredAt: parcel.registeredAt,
 			}
 
@@ -257,6 +260,7 @@ export class ParcelsService {
 					},
 					pickupCode: true,
 					courier: true,
+					imageUrl: true,
 					pickedUpAt: true,
 				}
 			});
@@ -269,6 +273,7 @@ export class ParcelsService {
 				unitNumber: parcel.recipient.unitNumber,
 				pickupCode: parcel.pickupCode,
 				courier: parcel.courier,
+				imageUrl: parcel.imageUrl,
 				pickedupAt: parcel.pickedUpAt,
 			};
 
@@ -303,6 +308,7 @@ export class ParcelsService {
 					},
 					pickupCode: true,
 					courier: true,
+					imageUrl: true,
 					returnedAt: true,
 				}
 			});
@@ -315,6 +321,7 @@ export class ParcelsService {
 				unitNumber: parcel.recipient.unitNumber,
 				pickupCode: parcel.pickupCode,
 				courier: parcel.courier,
+				imageUrl: parcel.imageUrl,
 				returnedAt: parcel.returnedAt,
 			};
 

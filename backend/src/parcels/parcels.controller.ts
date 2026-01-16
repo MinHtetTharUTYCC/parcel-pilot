@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, UseInterceptors, Query, Patch, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, UseInterceptors, Query, Patch, Delete, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { ParcelsService } from './parcels.service';
 import { ReqUser } from 'src/auth/decorators/req-user.decorator';
 import * as authInterfaces from 'src/auth/interfaces/auth.interface';
@@ -8,6 +8,7 @@ import { SuccessResponseInterceptor } from 'src/common/interceptors/success-resp
 import { UpdateParcelDto } from './dto/update-parcel.dto';
 import { GetParcelsFilterDto } from './dto/get-parcels.filter.dto';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Parcels')
 @ApiBearerAuth('access-token')
@@ -60,8 +61,8 @@ export class ParcelsController {
 		status: 403,
 		description: 'Forbidden - insufficient permissions',
 	})
-	getAllParcels(@Query() dto: GetParcelsFilterDto) {
-		return this.parcelsService.getParcels(dto);
+	getAllParcels(@ReqUser() user: authInterfaces.RequestUser, @Query() dto: GetParcelsFilterDto) {
+		return this.parcelsService.getParcels(user, dto);
 	}
 
 	@Get('mine')
@@ -157,6 +158,7 @@ export class ParcelsController {
 	}
 
 	@Post()
+	@UseInterceptors(FileInterceptor('image'))
 	@Auth('STAFF', 'MANAGER')
 	@ApiOperation({
 		summary: 'Create New Parcel',
@@ -193,8 +195,17 @@ export class ParcelsController {
 		status: 403,
 		description: 'Forbidden - insufficient permissions',
 	})
-	createParcel(@Body() dto: CreateParcelDto, @ReqUser() user: authInterfaces.RequestUser) {
-		return this.parcelsService.createParcel(dto, user.sub);
+	createParcel(
+		@Body() dto: CreateParcelDto,
+		@UploadedFile(new ParseFilePipe({
+			validators: [
+				new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+				new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ })
+			],
+			fileIsRequired: true
+		})
+		) file: Express.Multer.File, @ReqUser() user: authInterfaces.RequestUser) {
+		return this.parcelsService.createParcel(dto, file, user.sub);
 	}
 
 	@Patch('pickup/:id')

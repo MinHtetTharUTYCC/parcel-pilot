@@ -1,3 +1,5 @@
+import { Attachment } from "resend";
+
 export interface TemplateData {
     recipientName?: string;
     unitNumber?: string;
@@ -10,7 +12,9 @@ export interface TemplateData {
     [key: string]: any;
 };
 
+
 export interface Template {
     subject: string;
     html: string;
+    attachments: Attachment[];
 };
