@@ -37,16 +37,21 @@ import { CloudflareR2Module } from './cloudflare-r2/cloudflareR2.module';
 				},
 			}),
 			inject: [ConfigService],
-		}), ParcelsModule,
-		DatabaseModule, AuthModule,
+		}),
+		ParcelsModule,
+		DatabaseModule,
+		AuthModule,
 		UsersModule,
 		NotificationsModule,
 		CloudflareR2Module,
 	],
 	controllers: [AppController],
-	providers: [AppService, {
-		provide: APP_FILTER,
-		useClass: AllExceptionsFilter,
-	}],
+	providers: [
+		AppService,
+		{
+			provide: APP_FILTER,
+			useClass: AllExceptionsFilter,
+		},
+	],
 })
-export class AppModule { }
+export class AppModule {}

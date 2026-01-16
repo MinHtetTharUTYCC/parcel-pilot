@@ -1,41 +1,35 @@
-import { Attachment } from "resend";
-import { Template, TemplateData } from "../interfaces/template.interface";
-
-// Validate that URL only uses safe schemes (http:// or https://)
-export function isValidUrl(url: string | null | undefined): boolean {
-  if (!url) return false;
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
+import { Attachment } from 'resend';
+import { Template, TemplateData } from '../interfaces/template.interface';
+import { getFilenameFromUrl, isValidUrl } from 'src/common/utils';
 
 export function getParcelPickedUpTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, pickedUpAt, courier, imgUrl, actionUrl } = data;
+	const { recipientName, unitNumber, pickedUpAt, courier, imgUrl, actionUrl } =
+		data;
 
-  const formattedDate = pickedUpAt
-    ? new Date(pickedUpAt).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-    : '';
+	const formattedDate = pickedUpAt
+		? new Date(pickedUpAt).toLocaleDateString('en-US', {
+				weekday: 'long',
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+			})
+		: '';
 
-  const attachments: Attachment[] = imgUrl ? [{
-    path: imgUrl,
-    filename: 'parcel.jpg',
+	const attachments: Attachment[] = imgUrl
+		? [
+				{
+					path: imgUrl,
+					filename: getFilenameFromUrl(imgUrl),
+				},
+			]
+		: [];
 
-  }] : []
+	// Validate actionUrl to prevent XSS attacks
+	const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
 
-  // Validate actionUrl to prevent XSS attacks
-  const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
-
-  const html = `
+	const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -69,11 +63,15 @@ export function getParcelPickedUpTemplate(data: TemplateData): Template {
             
             <p>Thank you for using our parcel management system!</p>
             
-            ${validActionUrl ? `
+            ${
+							validActionUrl
+								? `
             <div style="text-align: center; margin-top: 30px;">
               <a href="${validActionUrl}" class="button">View Pickup History</a>
             </div>
-            ` : ''}
+            `
+								: ''
+						}
             
             <div class="footer">
               <p>If you have any questions about this pickup, please contact the Front Desk.</p>
@@ -85,9 +83,11 @@ export function getParcelPickedUpTemplate(data: TemplateData): Template {
       </html>
     `;
 
-  return {
-    subject: unitNumber ? `Parcel Picked Up - ${unitNumber}` : 'Parcel Picked Up',
-    html,
-    attachments: attachments,
-  };
+	return {
+		subject: unitNumber
+			? `Parcel Picked Up - ${unitNumber}`
+			: 'Parcel Picked Up',
+		html,
+		attachments: attachments,
+	};
 }

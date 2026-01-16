@@ -1,13 +1,35 @@
-import { Controller, Get, Post, Param, Body, UseInterceptors, Query, Patch, Delete, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	Post,
+	Param,
+	Body,
+	UseInterceptors,
+	Query,
+	Patch,
+	Delete,
+	UploadedFile,
+	ParseFilePipe,
+	MaxFileSizeValidator,
+	FileTypeValidator,
+} from '@nestjs/common';
 import { ParcelsService } from './parcels.service';
 import { ReqUser } from 'src/auth/decorators/req-user.decorator';
 import * as authInterfaces from 'src/auth/interfaces/auth.interface';
 import { Auth } from 'src/auth/decorators/auth.decorator';
-import { CreateParcelDto } from './dto/create-parel.dto';
+import { CreateParcelDto } from './dto/create-parcel.dto';
 import { SuccessResponseInterceptor } from 'src/common/interceptors/success-response.interceptor';
 import { UpdateParcelDto } from './dto/update-parcel.dto';
 import { GetParcelsFilterDto } from './dto/get-parcels.filter.dto';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import {
+	ApiTags,
+	ApiOperation,
+	ApiParam,
+	ApiQuery,
+	ApiResponse,
+	ApiBearerAuth,
+	ApiBody,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Parcels')
@@ -15,13 +37,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('parcels')
 @UseInterceptors(SuccessResponseInterceptor)
 export class ParcelsController {
-	constructor(private readonly parcelsService: ParcelsService) { }
+	constructor(private readonly parcelsService: ParcelsService) {}
 
 	@Get()
 	@Auth('STAFF', 'MANAGER')
 	@ApiOperation({
 		summary: 'Get All Parcels',
-		description: 'Retrieve a list of all parcels in the system with optional search and pagination. Only STAFF and MANAGER roles can access this.',
+		description:
+			'Retrieve a list of all parcels in the system with optional search and pagination. Only STAFF and MANAGER roles can access this.',
 	})
 	@ApiQuery({
 		type: GetParcelsFilterDto,
@@ -61,7 +84,10 @@ export class ParcelsController {
 		status: 403,
 		description: 'Forbidden - insufficient permissions',
 	})
-	getAllParcels(@ReqUser() user: authInterfaces.RequestUser, @Query() dto: GetParcelsFilterDto) {
+	getAllParcels(
+		@ReqUser() user: authInterfaces.RequestUser,
+		@Query() dto: GetParcelsFilterDto,
+	) {
 		return this.parcelsService.getParcels(user, dto);
 	}
 
@@ -69,7 +95,8 @@ export class ParcelsController {
 	@Auth('RESIDENT')
 	@ApiOperation({
 		summary: 'Get My Parcels',
-		description: 'Retrieve parcels for the logged-in resident. Only RESIDENT role can access this.',
+		description:
+			'Retrieve parcels for the logged-in resident. Only RESIDENT role can access this.',
 	})
 	@ApiQuery({
 		type: GetParcelsFilterDto,
@@ -103,7 +130,10 @@ export class ParcelsController {
 		status: 403,
 		description: 'Forbidden - insufficient permissions',
 	})
-	getMyParcels(@ReqUser() user: authInterfaces.RequestUser, @Query() dto: GetParcelsFilterDto) {
+	getMyParcels(
+		@ReqUser() user: authInterfaces.RequestUser,
+		@Query() dto: GetParcelsFilterDto,
+	) {
 		return this.parcelsService.getMyParcels(user.sub, dto);
 	}
 
@@ -111,7 +141,8 @@ export class ParcelsController {
 	@Auth('RESIDENT', 'STAFF', 'MANAGER')
 	@ApiOperation({
 		summary: 'Get Parcel Details',
-		description: 'Retrieve detailed information about a specific parcel. Residents can only view their own parcels.',
+		description:
+			'Retrieve detailed information about a specific parcel. Residents can only view their own parcels.',
 	})
 	@ApiParam({
 		name: 'id',
@@ -153,7 +184,10 @@ export class ParcelsController {
 		status: 403,
 		description: 'Forbidden - cannot view other residents parcels',
 	})
-	getParcel(@ReqUser() user: authInterfaces.RequestUser, @Param('id') id: string,) {
+	getParcel(
+		@ReqUser() user: authInterfaces.RequestUser,
+		@Param('id') id: string,
+	) {
 		return this.parcelsService.getParcel(user, id);
 	}
 
@@ -162,7 +196,8 @@ export class ParcelsController {
 	@Auth('STAFF', 'MANAGER')
 	@ApiOperation({
 		summary: 'Create New Parcel',
-		description: 'Create a new parcel entry in the system. Only STAFF and MANAGER roles can create parcels.',
+		description:
+			'Create a new parcel entry in the system. Only STAFF and MANAGER roles can create parcels.',
 	})
 	@ApiBody({
 		type: CreateParcelDto,
@@ -197,14 +232,18 @@ export class ParcelsController {
 	})
 	createParcel(
 		@Body() dto: CreateParcelDto,
-		@UploadedFile(new ParseFilePipe({
-			validators: [
-				new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-				new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ })
-			],
-			fileIsRequired: true
-		})
-		) file: Express.Multer.File, @ReqUser() user: authInterfaces.RequestUser) {
+		@UploadedFile(
+			new ParseFilePipe({
+				validators: [
+					new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+					new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+				],
+				fileIsRequired: true,
+			}),
+		)
+		file: Express.Multer.File,
+		@ReqUser() user: authInterfaces.RequestUser,
+	) {
 		return this.parcelsService.createParcel(dto, file, user.sub);
 	}
 
@@ -212,7 +251,8 @@ export class ParcelsController {
 	@Auth('STAFF', 'MANAGER')
 	@ApiOperation({
 		summary: 'Mark Parcel as Picked Up',
-		description: 'Update parcel status to picked up by the resident. Only STAFF and MANAGER roles can perform this action.',
+		description:
+			'Update parcel status to picked up by the resident. Only STAFF and MANAGER roles can perform this action.',
 	})
 	@ApiParam({
 		name: 'id',
@@ -243,9 +283,7 @@ export class ParcelsController {
 		status: 403,
 		description: 'Forbidden - insufficient permissions',
 	})
-	pickupParcel(
-		@Param('id') id: string,
-	) {
+	pickupParcel(@Param('id') id: string) {
 		return this.parcelsService.pickupParcel(id);
 	}
 
@@ -253,7 +291,8 @@ export class ParcelsController {
 	@Auth('STAFF', 'MANAGER')
 	@ApiOperation({
 		summary: 'Mark Parcel as Returned',
-		description: 'Update parcel status to returned to sender. Only STAFF and MANAGER roles can perform this action.',
+		description:
+			'Update parcel status to returned to sender. Only STAFF and MANAGER roles can perform this action.',
 	})
 	@ApiParam({
 		name: 'id',
@@ -284,9 +323,7 @@ export class ParcelsController {
 		status: 403,
 		description: 'Forbidden - insufficient permissions',
 	})
-	returnParcel(
-		@Param('id') id: string,
-	) {
+	returnParcel(@Param('id') id: string) {
 		return this.parcelsService.returnParcel(id);
 	}
 
@@ -294,7 +331,8 @@ export class ParcelsController {
 	@Auth('STAFF', 'MANAGER')
 	@ApiOperation({
 		summary: 'Update Parcel',
-		description: 'Update parcel information. Only STAFF and MANAGER roles can update parcels.',
+		description:
+			'Update parcel information. Only STAFF and MANAGER roles can update parcels.',
 	})
 	@ApiParam({
 		name: 'id',
@@ -332,10 +370,7 @@ export class ParcelsController {
 		status: 403,
 		description: 'Forbidden - insufficient permissions',
 	})
-	updateParcel(
-		@Param('id') id: string,
-		@Body() dto: UpdateParcelDto,
-	) {
+	updateParcel(@Param('id') id: string, @Body() dto: UpdateParcelDto) {
 		return this.parcelsService.updateParcel(dto, id);
 	}
 
@@ -343,7 +378,8 @@ export class ParcelsController {
 	@Auth('STAFF', 'MANAGER')
 	@ApiOperation({
 		summary: 'Delete Parcel',
-		description: 'Delete a parcel record from the system. Only STAFF and MANAGER roles can delete parcels.',
+		description:
+			'Delete a parcel record from the system. Only STAFF and MANAGER roles can delete parcels.',
 	})
 	@ApiParam({
 		name: 'id',

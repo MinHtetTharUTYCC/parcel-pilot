@@ -5,9 +5,9 @@ import { DatabaseModule } from 'src/database/database.module';
 import { CloudflareR2Module } from 'src/cloudflare-r2/cloudflareR2.module';
 
 @Module({
-  imports: [DatabaseModule, CloudflareR2Module],
-  controllers: [UsersController],
-  providers: [UsersService],
-  exports: [UsersService],
+	imports: [DatabaseModule, CloudflareR2Module],
+	controllers: [UsersController],
+	providers: [UsersService],
+	exports: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

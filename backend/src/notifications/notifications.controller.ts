@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Get,
+	Post,
+	Query,
+	UseInterceptors,
+} from '@nestjs/common';
 import { PickupReminderCron } from './cron/pick-up-reminder.cron';
 import { SuccessResponseInterceptor } from 'src/common/interceptors/success-response.interceptor';
 import { Auth } from 'src/auth/decorators/auth.decorator';
@@ -10,21 +17,24 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 @Controller('notifications')
 @UseInterceptors(SuccessResponseInterceptor)
 export class NotificationsController {
-    constructor(
-        private pickupReminderCron: PickupReminderCron,
-        private webNotificationsService: WebNotificationsService,
-    ) { }
+	constructor(
+		private pickupReminderCron: PickupReminderCron,
+		private webNotificationsService: WebNotificationsService,
+	) {}
 
-    @Post('test-pickup-reminders')
-    async testPickupReminders() {
-        await this.pickupReminderCron.triggerManually();
-        return 'Pickup reminder job triggered';
-    }
+	@Post('test-pickup-reminders')
+	@Auth('MANAGER')
+	async testPickupReminders() {
+		await this.pickupReminderCron.triggerManually();
+		return { message: 'Pickup reminder job triggered' };
+	}
 
-    @Get()
-    @Auth('RESIDENT')
-    async getNofifications(@ReqUser() user: RequestUser, @Body() dto: PaginationDto) {
-        await this.webNotificationsService.getNotifications(user.sub, dto)
-
-    }
+	@Get()
+	@Auth('RESIDENT')
+	async getNotifications(
+		@ReqUser() user: RequestUser,
+		@Query() dto: PaginationDto,
+	) {
+		return this.webNotificationsService.getNotifications(user.sub, dto);
+	}
 }

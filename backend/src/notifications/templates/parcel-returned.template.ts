@@ -1,29 +1,33 @@
-import { Attachment } from "resend";
-import { Template, TemplateData } from "../interfaces/template.interface";
-import { isValidUrl } from "./parcel-pickedup.template";
+import { Attachment } from 'resend';
+import { Template, TemplateData } from '../interfaces/template.interface';
+import { getFilenameFromUrl, isValidUrl } from 'src/common/utils';
 
 export function getParcelReturnedTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, returnedAt, courier, imgUrl, actionUrl } = data;
-  const formattedDate = returnedAt
-    ? new Date(returnedAt).toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-    : '';
+	const { recipientName, unitNumber, returnedAt, courier, imgUrl, actionUrl } =
+		data;
+	const formattedDate = returnedAt
+		? new Date(returnedAt).toLocaleString('en-US', {
+				weekday: 'long',
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+			})
+		: '';
 
-  const attachments: Attachment[] = imgUrl ? [{
-    path: imgUrl,
-    filename: 'parcel.jpg',
+	const attachments: Attachment[] = imgUrl
+		? [
+				{
+					path: imgUrl,
+					filename: getFilenameFromUrl(imgUrl),
+				},
+			]
+		: [];
 
-  }] : []
+	const validActionUrl = isValidUrl(actionUrl);
 
-  const validActionUrl = isValidUrl(actionUrl);
-
-  const html = `
+	const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -65,11 +69,15 @@ export function getParcelReturnedTemplate(data: TemplateData): Template {
               <li>Parcel was damaged or opened</li>
             </ul>
             
-            ${validActionUrl ? `
+            ${
+							validActionUrl
+								? `
             <div style="text-align: center; margin-top: 30px;">
               <a href="${validActionUrl}" class="button">View Parcel Details</a>
             </div>
-            ` : ''}
+            `
+								: ''
+						}
             
             <div class="footer">
               <p><strong>What to do next:</strong></p>
@@ -85,9 +93,9 @@ export function getParcelReturnedTemplate(data: TemplateData): Template {
       </html>
     `;
 
-  return {
-    subject: unitNumber ? `Parcel Returned - ${unitNumber}` : 'Returned',
-    html,
-    attachments: attachments,
-  };
+	return {
+		subject: unitNumber ? `Parcel Returned - ${unitNumber}` : 'Parcel Returned',
+		html,
+		attachments,
+	};
 }

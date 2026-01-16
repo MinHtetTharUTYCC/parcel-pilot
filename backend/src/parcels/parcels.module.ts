@@ -11,4 +11,4 @@ import { CloudflareR2Module } from 'src/cloudflare-r2/cloudflareR2.module';
 	providers: [ParcelsService],
 	exports: [ParcelsService],
 })
-export class ParcelsModule { }
+export class ParcelsModule {}

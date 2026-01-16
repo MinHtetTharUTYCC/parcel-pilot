@@ -1,6 +1,6 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
-import { CreateParcelDto } from './dto/create-parel.dto';
+import { CreateParcelDto } from './dto/create-parcel.dto';
 import { generatePickupCode } from 'src/common/utils';
 import { ParcelStatus, Prisma, UserRole } from '@prisma/client';
 import { RequestUser } from 'src/auth/interfaces/auth.interface';
@@ -10,17 +10,20 @@ import { GetParcelsFilterDto } from './dto/get-parcels.filter.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ParcelRegisteredEvent } from 'src/notifications/events/parcel-registered.event';
 import { ParcelPickedupEvent } from 'src/notifications/events/parcel-pickedup.event';
-import { ParcelReturnedEvent } from 'src/notifications/events/parcal-returned.event';
+import { ParcelReturnedEvent } from 'src/notifications/events/parcel-returned.event';
 import { events } from 'src/common/consts/event-names';
-import { CloudflareR2Service, ImageUploadOptions } from 'src/cloudflare-r2/cloudflareR2.service';
+import {
+	CloudflareR2Service,
+	ImageUploadOptions,
+} from 'src/cloudflare-r2/cloudflareR2.service';
 
 @Injectable()
 export class ParcelsService {
 	constructor(
 		private databaseService: DatabaseService,
-		private eventEmiiter: EventEmitter2,
-		private cloudflareR2Servie: CloudflareR2Service,
-	) { }
+		private eventEmitter: EventEmitter2,
+		private cloudflareR2Service: CloudflareR2Service,
+	) {}
 
 	async getParcels(user: RequestUser, dto: GetParcelsFilterDto) {
 		const { cursor, limit, q } = dto;
@@ -28,8 +31,8 @@ export class ParcelsService {
 
 		// registered date cursor
 		if (cursor) {
-			whereCondition.registeredAt = { lt: new Date(cursor) }
-		};
+			whereCondition.registeredAt = { lt: new Date(cursor) };
+		}
 
 		// search
 		if (q) {
@@ -46,26 +49,28 @@ export class ParcelsService {
 							{ name: { contains: q, mode: 'insensitive' } },
 							{ email: { contains: q, mode: 'insensitive' } },
 							{ phone: { contains: q, mode: 'insensitive' } },
-						]
-					}
-				}
-			]
+						],
+					},
+				},
+			];
 		}
 
 		const parcels = await this.databaseService.parcel.findMany({
 			where: whereCondition,
 			take: limit + 1,
 			orderBy: { registeredAt: 'desc' },
-			include: this.getIncludeForParcel(user.role as UserRole)
+			include: this.getIncludeForParcel(user.role as UserRole),
 		});
 
 		const hasNext = parcels.length > limit;
 		const items = hasNext ? parcels.slice(0, -1) : parcels;
-		const nextCursor = hasNext ? items[items.length - 1].registeredAt.toISOString() : null;
+		const nextCursor = hasNext
+			? items[items.length - 1].registeredAt.toISOString()
+			: null;
 
 		return {
 			data: items,
-			meta: { limit, hasNext, nextCursor }
+			meta: { limit, hasNext, nextCursor },
 		};
 	}
 
@@ -74,7 +79,7 @@ export class ParcelsService {
 
 		// ownership
 		const whereCondition: Prisma.ParcelWhereInput = {
-			recipientId: userId
+			recipientId: userId,
 		};
 
 		// registered date cursor
@@ -103,16 +108,21 @@ export class ParcelsService {
 
 		const hasNext = parcels.length > limit;
 		const items = hasNext ? parcels.slice(0, -1) : parcels;
-		const nextCursor = hasNext ? items[items.length - 1].registeredAt.toISOString() : null;
+		const nextCursor = hasNext
+			? items[items.length - 1].registeredAt.toISOString()
+			: null;
 
 		return {
 			data: items,
-			meta: { limit, hasNext, nextCursor }
+			meta: { limit, hasNext, nextCursor },
 		};
 	}
 
 	async getParcel(user: RequestUser, parcelId: string) {
-		const whereClause = user.role === 'RESIDENT' ? { id: parcelId, recipientId: user.sub } : { id: parcelId };
+		const whereClause =
+			user.role === 'RESIDENT'
+				? { id: parcelId, recipientId: user.sub }
+				: { id: parcelId };
 
 		const parcel = await this.databaseService.parcel.findUnique({
 			where: whereClause,
@@ -120,7 +130,7 @@ export class ParcelsService {
 		});
 
 		if (!parcel) {
-			throw new NotFoundException("Parcel not found or access denied");
+			throw new NotFoundException('Parcel not found or access denied');
 		}
 
 		return parcel;
@@ -132,7 +142,7 @@ export class ParcelsService {
 				select: {
 					name: true,
 					unitNumber: true,
-				}
+				},
 			},
 			imageKey: true,
 			imageUrl: true,
@@ -150,7 +160,7 @@ export class ParcelsService {
 							email: true,
 							phone: true,
 							unitNumber: true,
-						}
+						},
 					},
 					receivedBy: { select: { name: true, email: true } },
 				};
@@ -163,16 +173,23 @@ export class ParcelsService {
 		}
 	}
 
-	async createParcel(dto: CreateParcelDto, file: Express.Multer.File, userId: string) {
+	async createParcel(
+		dto: CreateParcelDto,
+		file: Express.Multer.File,
+		userId: string,
+	) {
 		const pickupCode = generatePickupCode();
 		const { recipientId, ...restOfDto } = dto;
 
 		const options: ImageUploadOptions = {
 			folder: 'parcels',
 			maxSize: 10 * 1024 * 1024,
-		}
+		};
 
-		const uploadResult = await this.cloudflareR2Servie.uploadImage(file, options);
+		const uploadResult = await this.cloudflareR2Service.uploadImage(
+			file,
+			options,
+		);
 
 		try {
 			const parcel = await this.databaseService.parcel.create({
@@ -181,10 +198,10 @@ export class ParcelsService {
 					imageKey: uploadResult.key,
 					imageUrl: uploadResult.url,
 					recipient: {
-						connect: { id: recipientId }
+						connect: { id: recipientId },
 					},
 					receivedBy: {
-						connect: { id: userId }
+						connect: { id: userId },
 					},
 					pickupCode,
 				},
@@ -196,14 +213,14 @@ export class ParcelsService {
 							name: true,
 							email: true,
 							unitNumber: true,
-						}
+						},
 					},
 					imageKey: true,
 					imageUrl: true,
 					pickupCode: true,
 					courier: true,
 					registeredAt: true,
-				}
+				},
 			});
 
 			const parcelRegisteredEvent: ParcelRegisteredEvent = {
@@ -216,15 +233,15 @@ export class ParcelsService {
 				courier: parcel.courier,
 				imageUrl: parcel.imageUrl,
 				registeredAt: parcel.registeredAt,
-			}
+			};
 
-			this.eventEmiiter.emit(events.registered, parcelRegisteredEvent);
+			this.eventEmitter.emit(events.registered, parcelRegisteredEvent);
 
 			return parcel;
 		} catch (error) {
 			if (error instanceof PrismaClientKnownRequestError) {
-				if (error.code === "P2025") {
-					throw new NotFoundException("User Not Found")
+				if (error.code === 'P2025') {
+					throw new NotFoundException('User Not Found');
 				}
 			}
 
@@ -239,10 +256,13 @@ export class ParcelsService {
 				data: { ...dto },
 			});
 
-			return { parcelId }
+			return { parcelId };
 		} catch (error: unknown) {
-			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
-				throw new NotFoundException("Parcel not found")
+			if (
+				error instanceof PrismaClientKnownRequestError &&
+				error.code === 'P2025'
+			) {
+				throw new NotFoundException('Parcel not found');
 			}
 			throw error;
 		}
@@ -253,7 +273,7 @@ export class ParcelsService {
 			const parcel = await this.databaseService.parcel.update({
 				where: { id: parcelId },
 				data: {
-					status: "PICKED_UP",
+					status: 'PICKED_UP',
 					pickedUpAt: new Date(),
 					returnedAt: null,
 				},
@@ -265,13 +285,13 @@ export class ParcelsService {
 							name: true,
 							email: true,
 							unitNumber: true,
-						}
+						},
 					},
 					pickupCode: true,
 					courier: true,
 					imageUrl: true,
 					pickedUpAt: true,
-				}
+				},
 			});
 
 			const parcelPickedupEvent: ParcelPickedupEvent = {
@@ -286,12 +306,15 @@ export class ParcelsService {
 				pickedupAt: parcel.pickedUpAt,
 			};
 
-			this.eventEmiiter.emit(events.pickedup, parcelPickedupEvent);
+			this.eventEmitter.emit(events.pickedup, parcelPickedupEvent);
 
-			return { parcelId, messages: "Marked as pickedup successfully" }
+			return { parcelId, messages: 'Marked as pickedup successfully' };
 		} catch (error: unknown) {
-			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
-				throw new NotFoundException("Parcel not found")
+			if (
+				error instanceof PrismaClientKnownRequestError &&
+				error.code === 'P2025'
+			) {
+				throw new NotFoundException('Parcel not found');
 			}
 			throw error;
 		}
@@ -301,7 +324,7 @@ export class ParcelsService {
 			const parcel = await this.databaseService.parcel.update({
 				where: { id: parcelId },
 				data: {
-					status: "RETURNED",
+					status: 'RETURNED',
 					returnedAt: new Date(),
 					pickedUpAt: null,
 				},
@@ -313,13 +336,13 @@ export class ParcelsService {
 							name: true,
 							email: true,
 							unitNumber: true,
-						}
+						},
 					},
 					pickupCode: true,
 					courier: true,
 					imageUrl: true,
 					returnedAt: true,
-				}
+				},
 			});
 
 			const parcelReturnedEvent: ParcelReturnedEvent = {
@@ -334,12 +357,15 @@ export class ParcelsService {
 				returnedAt: parcel.returnedAt,
 			};
 
-			this.eventEmiiter.emit(events.returned, parcelReturnedEvent)
+			this.eventEmitter.emit(events.returned, parcelReturnedEvent);
 
-			return { parcelId, messages: "Marked as returned successfully" }
+			return { parcelId, messages: 'Marked as returned successfully' };
 		} catch (error: unknown) {
-			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
-				throw new NotFoundException("Parcel not found")
+			if (
+				error instanceof PrismaClientKnownRequestError &&
+				error.code === 'P2025'
+			) {
+				throw new NotFoundException('Parcel not found');
 			}
 			throw error;
 		}
@@ -350,15 +376,18 @@ export class ParcelsService {
 			await this.databaseService.parcel.update({
 				where: { id: parcelId },
 				data: {
-					status: "READY_FOR_PICKUP",
+					status: 'READY_FOR_PICKUP',
 				},
 				select: {
 					id: true,
-				}
+				},
 			});
 		} catch (error: unknown) {
-			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
-				throw new NotFoundException("Parcel not found")
+			if (
+				error instanceof PrismaClientKnownRequestError &&
+				error.code === 'P2025'
+			) {
+				throw new NotFoundException('Parcel not found');
 			}
 			throw error;
 		}
@@ -366,11 +395,14 @@ export class ParcelsService {
 
 	async deleteParcel(parcelId: string) {
 		try {
-			await this.databaseService.parcel.delete({ where: { id: parcelId } })
+			await this.databaseService.parcel.delete({ where: { id: parcelId } });
 			return { parcelId };
 		} catch (error) {
-			if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
-				throw new NotFoundException("Parcel not found")
+			if (
+				error instanceof PrismaClientKnownRequestError &&
+				error.code === 'P2025'
+			) {
+				throw new NotFoundException('Parcel not found');
 			}
 		}
 	}
@@ -398,5 +430,4 @@ export class ParcelsService {
 
 		return pendingParcels;
 	}
-
 }

@@ -1,23 +1,23 @@
-import { Template, TemplateData } from "../interfaces/template.interface";
-import { isValidUrl } from "./parcel-pickedup.template";
+import { Template, TemplateData } from '../interfaces/template.interface';
+import { isValidUrl } from 'src/common/utils';
 
 export function getAccountRejectedTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, rejectedAt, actionUrl } = data;
+	const { recipientName, unitNumber, rejectedAt, actionUrl } = data;
 
-  const formattedDate = rejectedAt
-    ? new Date(rejectedAt).toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-    : '';
+	const formattedDate = rejectedAt
+		? new Date(rejectedAt).toLocaleString('en-US', {
+				weekday: 'long',
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+			})
+		: '';
 
-  const validActionUrl = isValidUrl(actionUrl);
+	const validActionUrl = isValidUrl(actionUrl);
 
-  const html = `
+	const html = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -76,9 +76,13 @@ export function getAccountRejectedTemplate(data: TemplateData): Template {
           <div style="text-align: center; margin: 35px 0;">
             <p><strong>What's Next?</strong></p>
             <p>You may reapply after addressing the issues mentioned above.</p>
-            ${validActionUrl ? `
+            ${
+							validActionUrl
+								? `
             <a href="${validActionUrl}" class="button" style="color: white; margin-top: 15px;">Review Application Guidelines</a>
-            ` : ''}
+            `
+								: ''
+						}
           </div>
           
           <div class="footer">
@@ -96,9 +100,9 @@ export function getAccountRejectedTemplate(data: TemplateData): Template {
     </html>
   `;
 
-  return {
-    subject: `⚠️ Account Registration Update - Unit ${unitNumber}`,
-    html,
-    attachments: [],
-  };
+	return {
+		subject: `⚠️ Account Registration Update - Unit ${unitNumber}`,
+		html,
+		attachments: [],
+	};
 }

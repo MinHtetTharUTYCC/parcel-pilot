@@ -194,7 +194,7 @@ backend/
 │   │   │       8 endpoints documented  │
 │   │   │                             │   │
 │   │   └── dto/                       │   │
-│   │       ├── create-parel.dto.ts    ├──┼─ ✅ Comprehensive
+│   │       ├── create-parcel.dto.ts   ├──┼─ ✅ Comprehensive
 │   │       ├── update-parcel.dto.ts   │   │   Documentation
 │   │       ├── update-parcel-status.dto.ts
 │   │       └── get-parcels.filter.dto.ts
@@ -228,7 +228,7 @@ backend/
 │
 ├── SWAGGER_DOCUMENTATION.md ◄─────────────── Complete API Reference
 ├── SWAGGER_QUICKSTART.md ──────────────────── Getting Started Guide
-└── IMPLEMENTATION_SUMMARY.md ─────────────── This Document
+└── ARCHITECTURE.md ───────────────────────── This Document
 ```
 
 ## Decorator Usage Pattern

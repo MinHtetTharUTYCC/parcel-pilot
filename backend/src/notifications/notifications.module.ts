@@ -13,25 +13,25 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { PickupReminderCron } from './cron/pick-up-reminder.cron';
 
 @Module({
-    imports: [
-        DatabaseModule,
-        ScheduleModule.forRoot(),
-        BullModule.registerQueue(
-            { name: "email-notifications" },
-            { name: "web-notifications" },
-        ),
-        ParcelsModule],
-    controllers: [NotificationsController],
-    providers: [
-        NotificationsService,
-        WebNotificationsService,
-        ParcelEventsListener,
-        ResidentEventsListener,
-        EmailNotificationsProcessor,
-        WebNotificationsProcessor,
-        PickupReminderCron,
-    ],
-    exports: [NotificationsService, WebNotificationsService]
+	imports: [
+		DatabaseModule,
+		ScheduleModule.forRoot(),
+		BullModule.registerQueue(
+			{ name: 'email-notifications' },
+			{ name: 'web-notifications' },
+		),
+		ParcelsModule,
+	],
+	controllers: [NotificationsController],
+	providers: [
+		NotificationsService,
+		WebNotificationsService,
+		ParcelEventsListener,
+		ResidentEventsListener,
+		EmailNotificationsProcessor,
+		WebNotificationsProcessor,
+		PickupReminderCron,
+	],
+	exports: [NotificationsService, WebNotificationsService],
 })
-export class NotificationsModule { }
-
+export class NotificationsModule {}

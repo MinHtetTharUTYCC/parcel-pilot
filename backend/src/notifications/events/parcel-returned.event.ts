@@ -1,6 +1,6 @@
 import { ParcelRegisteredEvent } from './parcel-registered.event';
 
-export type ParcelPickedupEvent = Omit<
+export type ParcelReturnedEvent = Omit<
 	ParcelRegisteredEvent,
 	'registeredAt'
-> & { pickedupAt: Date };
+> & { returnedAt: Date };

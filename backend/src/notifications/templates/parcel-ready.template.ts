@@ -1,30 +1,42 @@
-import { Attachment } from "resend";
-import { Template, TemplateData } from "../interfaces/template.interface";
-import { isValidUrl } from "./parcel-pickedup.template";
+import { Attachment } from 'resend';
+import { Template, TemplateData } from '../interfaces/template.interface';
+import { getFilenameFromUrl, isValidUrl } from 'src/common/utils';
 
 export function getParcelReadyTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, pickupCode, courier, registeredAt, imgUrl, actionUrl } = data;
+	const {
+		recipientName,
+		unitNumber,
+		pickupCode,
+		courier,
+		registeredAt,
+		imgUrl,
+		actionUrl,
+	} = data;
 
-  // Format date if provided
-  const formattedDate = registeredAt
-    ? new Date(registeredAt).toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-    : '';
+	// Format date if provided
+	const formattedDate = registeredAt
+		? new Date(registeredAt).toLocaleString('en-US', {
+				weekday: 'long',
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+			})
+		: '';
 
-  const attachments: Attachment[] = imgUrl ? [{
-    path: imgUrl,
-    filename: 'parcel.jpg',
-  }] : []
+	const attachments: Attachment[] = imgUrl
+		? [
+				{
+					path: imgUrl,
+					filename: getFilenameFromUrl(imgUrl),
+				},
+			]
+		: [];
 
-  const validActionUrl = isValidUrl(actionUrl);
+	const validActionUrl = isValidUrl(actionUrl);
 
-  const html = `
+	const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -61,11 +73,15 @@ export function getParcelReadyTemplate(data: TemplateData): Template {
               <p>Please present this code when picking up your parcel.</p>
             </div>
             
-            ${validActionUrl ? `
+            ${
+							validActionUrl
+								? `
             <div style="text-align: center; margin-top: 30px;">
               <a href="${validActionUrl}" class="button">View Parcel Details</a>
     </div>
-      ` : ''}
+      `
+								: ''
+						}
             
             <div class="footer">
               <p><strong>Pickup Location:</strong> Building Lobby / Concierge Desk</p>
@@ -78,9 +94,9 @@ export function getParcelReadyTemplate(data: TemplateData): Template {
       </html>
     `;
 
-  return {
-    subject: `📦 New Parcel Ready for Pickup${unitNumber ? ` - ${unitNumber}` : ''}`,
-    html,
-    attachments: attachments,
-  };
+	return {
+		subject: `📦 New Parcel Ready for Pickup${unitNumber ? ` - ${unitNumber}` : ''}`,
+		html,
+		attachments: attachments,
+	};
 }

@@ -1,32 +1,45 @@
-import { Attachment } from "resend";
-import { TemplateData, Template } from "../interfaces/template.interface";
-import { isValidUrl } from "./parcel-pickedup.template";
+import { Attachment } from 'resend';
+import { TemplateData, Template } from '../interfaces/template.interface';
+import { getFilenameFromUrl, isValidUrl } from 'src/common/utils';
 
 export function getPickupReminderTemplate(data: TemplateData): Template {
-  const { recipientName, unitNumber, pickupCode, registeredAt, orderId, daysWaiting, imgUrl, actionUrl } = data;
+	const {
+		recipientName,
+		unitNumber,
+		pickupCode,
+		registeredAt,
+		orderId,
+		daysWaiting,
+		imgUrl,
+		actionUrl,
+	} = data;
 
-  console.log("imgUrl", imgUrl)
+	const registeredFormatted = registeredAt
+		? new Date(registeredAt).toLocaleDateString('en-US', {
+				month: 'short',
+				day: 'numeric',
+			})
+		: '';
 
-  const registeredFormatted = registeredAt
-    ? new Date(registeredAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    })
-    : '';
+	const waitingDays = daysWaiting ?? 0;
 
-  const urgencyMessage = daysWaiting >= 7
-    ? `<p style="color: #dc2626; font-weight: 600;">⚠️ This parcel has been waiting for ${daysWaiting} days. Please pick it up as soon as possible to avoid return shipping.</p>`
-    : `<p>Your parcel has been waiting for ${daysWaiting} day${daysWaiting > 1 ? 's' : ''}.</p>`;
+	const urgencyMessage =
+		waitingDays >= 7
+			? `<p style="color: #dc2626; font-weight: 600;">⚠️ This parcel has been waiting for ${waitingDays} days. Please pick it up as soon as possible to avoid return shipping.</p>`
+			: `<p>Your parcel has been waiting for ${waitingDays} day${waitingDays > 1 ? 's' : ''}.</p>`;
 
-  const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
+	const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
 
-  const attachments: Attachment[] = imgUrl ? [{
-    path: imgUrl,
-    filename: 'parcel.jpg',
+	const attachments: Attachment[] = imgUrl
+		? [
+				{
+					path: imgUrl,
+					filename: getFilenameFromUrl(imgUrl),
+				},
+			]
+		: [];
 
-  }] : []
-
-  const html = `
+	const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -55,7 +68,7 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
                         
                         <div class="info-box">
                             <p><strong>Order ID:</strong> ${orderId}</p>
-                            <p><strong>Days waiting:</strong> ${daysWaiting}</p>
+                            <p><strong>Days waiting:</strong> ${waitingDays}</p>
                         </div>
             
             <div class="reminder-box">
@@ -70,11 +83,15 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
               <div class="code">${pickupCode || 'N/A'}</div>
             </div>
             
-            ${validActionUrl ? `
+            ${
+							validActionUrl
+								? `
             <div style="text-align: center; margin-top: 30px;">
               <a href="${validActionUrl}" class="button">View Parcel Details</a>
             </div>
-            ` : ''}
+            `
+								: ''
+						}
             
             <div class="footer">
                 <p>This is an automated reminder from Parcel Pilot</p>
@@ -86,9 +103,9 @@ export function getPickupReminderTemplate(data: TemplateData): Template {
       </html>
     `;
 
-  return {
-    subject: `Reminder: Your parcel is ready for pickup${daysWaiting >= 7 ? ' (Urgent)' : ''}`,
-    html,
-    attachments,
-  };
+	return {
+		subject: `Reminder: Your parcel is ready for pickup${daysWaiting >= 7 ? ' (Urgent)' : ''}`,
+		html,
+		attachments,
+	};
 }
