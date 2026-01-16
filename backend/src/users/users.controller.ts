@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { SuccessResponseInterceptor } from 'src/common/interceptors/success-response.interceptor';
 import { Auth } from 'src/auth/decorators/auth.decorator';
@@ -6,6 +6,11 @@ import { ResidentFilterDto } from './dto/resident-filter.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { ReqUser } from 'src/auth/decorators/req-user.decorator';
+import { RequestUser } from 'src/auth/interfaces/auth.interface';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateUnitDto } from './dto/update-unit.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Users')
 @ApiBearerAuth('access-token')
@@ -13,6 +18,35 @@ import { CreateStaffDto } from './dto/create-staff.dto';
 @UseInterceptors(SuccessResponseInterceptor)
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
+
+    @Get('me')
+    @Auth('MANAGER', 'STAFF', 'RESIDENT')
+    getMe(@ReqUser() user: RequestUser) {
+        return this.usersService.getMe(user.sub);
+    }
+
+    @Patch('update')
+    @Auth('MANAGER', 'STAFF', 'RESIDENT')
+    @UseInterceptors(FileInterceptor('image'))
+    updateProfile(
+        @ReqUser() user: RequestUser,
+        @UploadedFile(new ParseFilePipe({
+            validators: [
+                new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+                new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ })
+            ],
+            fileIsRequired: false,
+        })
+        ) file: Express.Multer.File,
+        @Body() dto: UpdateProfileDto) {
+        return this.usersService.updateProfile(user.sub, file, dto)
+    }
+
+    @Patch('update/unit')
+    @Auth('MANAGER', 'STAFF')
+    updateUnit(@Body() dto: UpdateUnitDto) {
+        return this.usersService.updateUnit(dto)
+    }
 
     @Patch(":id/approve")
     @Auth('STAFF', 'MANAGER')
@@ -190,4 +224,5 @@ export class UsersController {
     createStaff(@Body() dto: CreateStaffDto) {
         return this.usersService.createStaff(dto);
     }
+
 }

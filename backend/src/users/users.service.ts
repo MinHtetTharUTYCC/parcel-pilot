@@ -11,12 +11,16 @@ import { ResidentApprovedEvent } from 'src/notifications/events/resident-approve
 import { events } from 'src/common/consts/event-names';
 import { ResidentRejectedEvent } from 'src/notifications/events/resident-rejected.event';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { CloudflareR2Service, ImageUploadOptions } from 'src/cloudflare-r2/cloudflareR2.service';
+import { UpdateUnitDto } from './dto/update-unit.dto';
 
 @Injectable()
 export class UsersService {
     constructor(
         private readonly databaseService: DatabaseService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly cloudflareR2Service: CloudflareR2Service,
     ) { }
 
     async userExistsByMail(email: string): Promise<boolean> {
@@ -115,7 +119,7 @@ export class UsersService {
         });
     }
 
-    // get user info
+
     async getMe(userId: string) {
         const user = await this.databaseService.user.findUnique({
             where: {
@@ -126,6 +130,7 @@ export class UsersService {
                 name: true,
                 email: true,
                 role: true,
+                imageUrl: true,
             },
         });
 
@@ -203,23 +208,22 @@ export class UsersService {
             throw error;
         }
     }
+
     async rejectResident(residentId: string) {
         try {
-            // TODO: uncomment
-            // const user = await this.databaseService.user.findUnique({
-            //     where
-            //         : { id: residentId },
-            //     select: { role: true }
-            // })
+            const user = await this.databaseService.user.findUnique({
+                where: { id: residentId },
+                select: { role: true }
+            })
 
-            // switch (user.role) {
-            //     case "RESIDENT":
-            //         throw new ConflictException("Resident already approved");
-            //     case "STAFF":
-            //     case "MANAGER":
-            //         throw new BadRequestException("Only approved residents");
+            switch (user.role) {
+                case "RESIDENT":
+                    throw new ConflictException("Resident already approved");
+                case "STAFF":
+                case "MANAGER":
+                    throw new BadRequestException("Only approved residents");
 
-            // }
+            }
 
             const resident = await this.databaseService.user.update({
                 where: { id: residentId },
@@ -344,5 +348,49 @@ export class UsersService {
         });
 
         return { staff };
+    }
+
+    async updateProfile(userId: string, file: Express.Multer.File = null, dto: UpdateProfileDto) {
+        const options: ImageUploadOptions = {
+            folder: 'avatars',
+            maxSize: 10 * 1024 * 1024,
+        }
+
+        const uploadResult = file ? await this.cloudflareR2Service.uploadImage(file, options) : null;
+
+        const updateUser = await this.databaseService.user.update({
+            where: { id: userId },
+            data: {
+                name: dto.name,
+                imageKey: uploadResult?.key ?? null,
+                imageUrl: uploadResult?.url ?? null,
+            },
+            select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+            }
+        });
+
+        return {
+            id: updateUser.id,
+            name: updateUser.name,
+            imageUrl: updateUser.imageUrl
+        }
+    }
+
+    async updateUnit(dto: UpdateUnitDto) {
+        const updateUser = await this.databaseService.user.update({
+            where: { id: dto.residentId, role: "RESIDENT" },
+            data: {
+                unitNumber: dto.unitNumber,
+            },
+            select: {
+                id: true,
+                unitNumber: true,
+            }
+        });
+
+        return { id: updateUser.id, unitNumber: updateUser.unitNumber }
     }
 }
