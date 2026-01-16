@@ -143,6 +143,15 @@ export class ParcelsService {
 			case 'MANAGER':
 				return {
 					...baseInclude,
+					recipient: {
+						select: {
+							id: true,
+							name: true,
+							email: true,
+							phone: true,
+							unitNumber: true,
+						}
+					},
 					receivedBy: { select: { name: true, email: true } },
 				};
 
