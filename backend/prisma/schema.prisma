@@ -11,6 +11,7 @@ enum UserRole {
   STAFF
   RESIDENT
   RESIDENT_PENDING
+  RESIDENT_REJECTED
 }
 
 model User {
@@ -20,9 +21,12 @@ model User {
   name       String
   phone      String?
   approvedAt DateTime? //for resident approval
+  rejectedAt DateTime? //for resident rejection
+
+  refreshToken String?
 
   role       UserRole @default(RESIDENT_PENDING)
-  unitNumber String? // For residents only
+  unitNumber String?  @unique
 
   imageUrl String?
   imageKey String? // R2 storage key
@@ -33,7 +37,6 @@ model User {
 
   receivedParcels Parcel[]       @relation("ReceivedParcels")
   managedParcels  Parcel[]       @relation("ManagedParcels")
-  pickupLogs      PickupLog[]
   notifications   Notification[]
 
   @@index([email])
@@ -70,49 +73,27 @@ model Parcel {
   receivedById String // staff who registered it
   receivedBy   User   @relation("ManagedParcels", fields: [receivedById], references: [id])
 
-  pickupLogs PickupLog[]
+  // pickupLogs PickupLog?
 
   registeredAt DateTime  @default(now())
   pickedUpAt   DateTime?
+  returnedAt   DateTime?
 
   @@index([recipientId])
   @@index([status])
   @@index([pickupCode])
   @@index([receivedById])
   @@index([registeredAt])
+  @@index([pickedUpAt])
+  @@index([returnedAt])
   @@index([orderId])
-}
-
-enum PickupMethod {
-  QR_SCAN
-  MANUAL_CODE // Resident entered code
-  STAFF_VERIFIED // staff verified manually
-}
-
-model PickupLog {
-  id String @id @default(cuid())
-
-  parcelId String
-  parcel   Parcel @relation(fields: [parcelId], references: [id])
-
-  // Who picked up
-  pickedById String // Resident who picked up
-  pickedBy   User   @relation(fields: [pickedById], references: [id])
-
-  // Pickup details
-  method PickupMethod
-
-  createdAt DateTime @default(now())
-
-  @@index([parcelId])
-  @@index([pickedById])
-  @@index([createdAt])
 }
 
 enum NotificationType {
   PARCEL_RECEIVED
   PARCEL_READY
   PARCEL_PICKED_UP
+  PARCEL_RETURNED
   PICKUP_REMINDER
   ACCOUNT_APPROVED // Resident approved
   ACCOUNT_REJECTED // Resident rejected
@@ -124,11 +105,9 @@ model Notification {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
-  // Notification content
-  type     NotificationType
-  title    String
-  message  String
-  metadata Json // { parcelId: "123", actionUrl: "/parcels/123" }
+  type    NotificationType
+  title   String
+  message String
 
   isRead Boolean @default(false)
 
