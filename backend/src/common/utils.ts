@@ -6,6 +6,16 @@ export function generatePickupCode() {
 	return `CONDO-${hexed}`;
 }
 
+export const escapeHtml = (str: string | null | undefined): string => {
+	if (!str) return '';
+	return String(str)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#x27;');
+};
+
 //for email
 export const getFilenameFromUrl = (url: string): string => {
 	const ext = url.split('.').pop()?.toLowerCase() || 'jpg';

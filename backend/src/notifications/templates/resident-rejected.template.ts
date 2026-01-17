@@ -1,23 +1,27 @@
 import { Template, TemplateData } from '../interfaces/template.interface';
-import { isValidUrl } from 'src/common/utils';
+import { isValidUrl, escapeHtml } from 'src/common/utils';
 
 export function getAccountRejectedTemplate(data: TemplateData): Template {
-	const { recipientName, unitNumber, rejectedAt, actionUrl } = data;
+  const { recipientName, unitNumber, rejectedAt, actionUrl } = data;
 
-	const formattedDate = rejectedAt
-		? new Date(rejectedAt).toLocaleString('en-US', {
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit',
-			})
-		: '';
+  // Escape user-controlled values to prevent XSS attacks
+  const escapedRecipientName = escapeHtml(recipientName);
+  const escapedUnitNumber = escapeHtml(unitNumber);
 
-	const validActionUrl = isValidUrl(actionUrl);
+  const formattedDate = rejectedAt
+    ? new Date(rejectedAt).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    : '';
 
-	const html = `
+  const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
+
+  const html = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -42,7 +46,7 @@ export function getAccountRejectedTemplate(data: TemplateData): Template {
           <p>Important information regarding your application</p>
         </div>
         <div class="content">
-          <p>Dear <strong>${recipientName}</strong>,</p>
+          <p>Dear <strong>${escapedRecipientName}</strong>,</p>
           
           <p>Thank you for your interest in joining our community portal. After careful review, we regret to inform you that your account registration <strong>cannot be approved at this time</strong>.</p>
           
@@ -51,11 +55,11 @@ export function getAccountRejectedTemplate(data: TemplateData): Template {
             <table style="width: 100%;">
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Applicant Name:</strong></td>
-                <td style="padding: 8px 0;">${recipientName}</td>
+                <td style="padding: 8px 0;">${escapedRecipientName}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Requested Unit:</strong></td>
-                <td style="padding: 8px 0;">${unitNumber}</td>
+                <td style="padding: 8px 0;">${escapedUnitNumber}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Decision Date:</strong></td>
@@ -76,13 +80,12 @@ export function getAccountRejectedTemplate(data: TemplateData): Template {
           <div style="text-align: center; margin: 35px 0;">
             <p><strong>What's Next?</strong></p>
             <p>You may reapply after addressing the issues mentioned above.</p>
-            ${
-							validActionUrl
-								? `
+            ${validActionUrl
+      ? `
             <a href="${validActionUrl}" class="button" style="color: white; margin-top: 15px;">Review Application Guidelines</a>
             `
-								: ''
-						}
+      : ''
+    }
           </div>
           
           <div class="footer">
@@ -100,9 +103,9 @@ export function getAccountRejectedTemplate(data: TemplateData): Template {
     </html>
   `;
 
-	return {
-		subject: `⚠️ Account Registration Update - Unit ${unitNumber}`,
-		html,
-		attachments: [],
-	};
+  return {
+    subject: `⚠️ Account Registration Update - Unit ${unitNumber}`,
+    html,
+    attachments: [],
+  };
 }

@@ -1,23 +1,27 @@
 import { Template, TemplateData } from '../interfaces/template.interface';
-import { isValidUrl } from 'src/common/utils';
+import { isValidUrl, escapeHtml } from 'src/common/utils';
 
 export function getAccountApprovedTemplate(data: TemplateData): Template {
-	const { recipientName, unitNumber, approvedAt, actionUrl } = data;
+  const { recipientName, unitNumber, approvedAt, actionUrl } = data;
 
-	const formattedDate = approvedAt
-		? new Date(approvedAt).toLocaleString('en-US', {
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit',
-			})
-		: '';
+  // Escape user-controlled values to prevent XSS attacks
+  const escapedRecipientName = escapeHtml(recipientName);
+  const escapedUnitNumber = escapeHtml(unitNumber);
 
-	const validActionUrl = isValidUrl(actionUrl);
+  const formattedDate = approvedAt
+    ? new Date(approvedAt).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    : '';
 
-	const html = `
+  const validActionUrl = isValidUrl(actionUrl) ? actionUrl : null;
+
+  const html = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -41,7 +45,7 @@ export function getAccountApprovedTemplate(data: TemplateData): Template {
           <p>Welcome to our community portal</p>
         </div>
         <div class="content">
-          <p>Dear <strong>${recipientName}</strong>,</p>
+          <p>Dear <strong>${escapedRecipientName}</strong>,</p>
           
           <p>We are pleased to inform you that your account registration has been <span class="highlight">successfully approved</span>!</p>
           
@@ -50,11 +54,11 @@ export function getAccountApprovedTemplate(data: TemplateData): Template {
             <table style="width: 100%;">
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Name:</strong></td>
-                <td style="padding: 8px 0;">${recipientName}</td>
+                <td style="padding: 8px 0;">${escapedRecipientName}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Unit Number:</strong></td>
-                <td style="padding: 8px 0;">${unitNumber}</td>
+                <td style="padding: 8px 0;">${escapedUnitNumber}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Approved On:</strong></td>
@@ -74,13 +78,12 @@ export function getAccountApprovedTemplate(data: TemplateData): Template {
           
           <div style="text-align: center; margin: 35px 0;">
             <p><strong>Get started by accessing your account:</strong></p>
-            ${
-							validActionUrl
-								? `
+            ${validActionUrl
+      ? `
             <a href="${validActionUrl}" class="button" style="color: white;">Access Your Account</a>
             `
-								: ''
-						}
+      : ''
+    }
           </div>
           
           <div class="footer">
@@ -94,9 +97,9 @@ export function getAccountApprovedTemplate(data: TemplateData): Template {
     </html>
   `;
 
-	return {
-		subject: `🎉 Account Approved - Welcome to Community Portal (Unit ${unitNumber})`,
-		html,
-		attachments: [],
-	};
+  return {
+    subject: `🎉 Account Approved - Welcome to Community Portal (Unit ${unitNumber})`,
+    html,
+    attachments: [],
+  };
 }

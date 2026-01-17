@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: parcel_pilot_api
+    command: node dist/main.js
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build: .
+    container_name: parcel_pilot_worker
+    command: node dist/worker.js
+    env_file:
+      - .env.production
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16
+    container_name: parcel_pilot_postgres
+    environment:
+      POSTGRES_DB: parcel_pilot
+      POSTGRES_USER: parcel_pilot
+      POSTGRES_PASSWORD: parcel_pilot
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: parcel_redis
+
+volumes:
+  pgdata:
