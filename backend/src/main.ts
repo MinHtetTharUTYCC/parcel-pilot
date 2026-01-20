@@ -7,6 +7,20 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
+
+	// CORS for Vercel frontend
+	const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
+		'http://localhost:5173',
+		'http://localhost:3000',
+	];
+
+	app.enableCors({
+		origin: corsOrigins,
+		credentials: true,
+		methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+		allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+	});
+
 	app.use(cookieParser());
 	app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
