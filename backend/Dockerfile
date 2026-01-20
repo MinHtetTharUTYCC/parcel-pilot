@@ -1,58 +1,47 @@
-# ---------- builder ----------
-FROM node:20-alpine AS builder
+# ---------- 1. BUILD STAGE ----------
+FROM node:20-alpine AS source_build
 WORKDIR /app
 
 # Enable pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy workspace configuration
-COPY pnpm-workspace.yaml ./
-COPY package.json pnpm-lock.yaml ./
+# Copy workspace configs from root
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 
-# Copy shared package if exists
-COPY ../shared /app/shared 2>/dev/null || true
+# Copy the actual code folders
+COPY shared ./shared
+COPY backend ./backend
 
-# Install dependencies
+# Install all dependencies (from root so it sees the lockfile)
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
-COPY . .
-
-# Copy Prisma schema
-COPY prisma ./prisma
-
-# Generate Prisma Client
+# Move into backend to build
+WORKDIR /app/backend
 RUN npx prisma generate
-
-# Build application
 RUN pnpm run build
 
-# ---------- production ----------
+# ---------- 2. PRODUCTION STAGE ----------
 FROM node:20-alpine
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
-
-# Enable pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Copy built application
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
-COPY --chown=nodejs:nodejs package.json ./
+# COPY EVERYTHING from the root node_modules to ensure shared links work
+COPY --from=source_build --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=source_build --chown=nodejs:nodejs /app/shared ./shared
+COPY --from=source_build --chown=nodejs:nodejs /app/backend/node_modules ./backend/node_modules
+COPY --from=source_build --chown=nodejs:nodejs /app/backend/dist ./backend/dist
+COPY --from=source_build --chown=nodejs:nodejs /app/backend/prisma ./backend/prisma
+COPY --from=source_build --chown=nodejs:nodejs /app/backend/package.json ./backend/package.json
 
-# Switch to non-root user
+WORKDIR /app/backend
 USER nodejs
 
 ENV NODE_ENV=production
-EXPOSE 3000
+EXPOSE 6000
 
-# Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
-
+# If your code uses tsconfig-paths in production, it needs to find it
 CMD ["node", "dist/main.js"]
